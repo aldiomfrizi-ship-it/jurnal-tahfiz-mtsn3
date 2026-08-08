@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jurnal Hafalan Tahfiz — MTsN 3 Kota Padang</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<style>
+:root{
+  --ink:#1b2e26;
+  --paper:#faf9f4;
+  --deep:#0d4a3a;
+  --deep-2:#123f33;
+  --gold:#b8912f;
+  --gold-soft:#e8dcb8;
+  --line:#d8d3c2;
+  --card:#ffffff;
+  --muted:#6b7c74;
+  --danger:#a13d2c;
+  --radius:10px;
+  --serif:'Amiri','Noto Naskh Arabic', Georgia, 'Times New Roman', serif;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;font-family:var(--sans);color:var(--ink);
+  background-color:var(--paper);
+  background-image:
+    linear-gradient(45deg, rgba(184,145,47,.05) 25%, transparent 25%, transparent 75%, rgba(184,145,47,.05) 75%),
+    linear-gradient(45deg, rgba(184,145,47,.05) 25%, transparent 25%, transparent 75%, rgba(184,145,47,.05) 75%);
+  background-size:28px 28px;
+  background-position:0 0, 14px 14px;
+}
+@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&display=swap');
+
+.app{max-width:1180px;margin:0 auto;padding:0 20px 60px;}
+header.top{
+  background:linear-gradient(135deg,var(--deep) 0%,var(--deep-2) 100%);
+  color:#fdfaf0;
+  padding:26px 24px 20px;
+  border-radius:0 0 18px 18px;
+  margin-bottom:22px;
+  position:relative;
+  overflow:hidden;
+  box-shadow:0 10px 30px rgba(13,74,58,.18);
+}
+header.top::after{
+  content:"";
+  position:absolute;inset:0;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'><g fill='none' stroke='%23e8dcb8' stroke-width='1' opacity='0.16'><path d='M42 4 L64 21 L64 63 L42 80 L20 63 L20 21 Z'/><path d='M42 4 L42 80 M20 21 L64 63 M64 21 L20 63'/></g></svg>");
+  background-repeat:repeat;
+  background-position:-10px -10px;
+  pointer-events:none;
+}
+header.top::before{
+  content:"";
+  position:absolute;right:18px;top:18px;width:56px;height:56px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><g fill='none' stroke='%23e8dcb8' stroke-width='2.5' opacity='0.55'><path d='M50 4 L61 30 L89 30 L66 47 L75 74 L50 58 L25 74 L34 47 L11 30 L39 30 Z'/></g></svg>");
+  background-repeat:no-repeat;background-size:contain;
+}
+.bismillah{position:relative;z-index:2;font-family:var(--serif);color:var(--gold-soft);font-size:15px;letter-spacing:.02em;margin:0 0 6px;opacity:.9;}
+.eyebrow{position:relative;z-index:2;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);font-weight:600;}
+h1{position:relative;z-index:2;font-family:var(--serif);font-weight:700;font-size:28px;margin:6px 0 4px;letter-spacing:.01em;}
+.sub{position:relative;z-index:2;color:#cfe3da;font-size:13.5px;max-width:620px;line-height:1.5;}
+
+.ornament-divider{
+  height:13px;margin:16px 0 2px;position:relative;z-index:2;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='13'><path d='M13 1 L25 6.5 L13 12 L1 6.5 Z' fill='none' stroke='%23e8dcb8' stroke-width='1.1' opacity='0.8'/></svg>");
+  background-repeat:repeat-x;background-position:left center;
+}
+
+nav.tabs{display:flex;gap:6px;margin:18px 0 20px;flex-wrap:wrap;position:relative;z-index:2;}
+nav.tabs button{
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);color:#fdfaf0;
+  padding:9px 16px;border-radius:999px;font-size:13.5px;font-weight:600;cursor:pointer;
+  font-family:var(--sans);transition:.15s;
+}
+nav.tabs button.active{background:var(--gold);border-color:var(--gold);color:#211a06;}
+nav.tabs button:hover:not(.active){background:rgba(255,255,255,.16);}
+
+.panel{display:none;}
+.panel.active{display:block;}
+
+.section-title{font-family:var(--serif);font-size:20px;font-weight:700;margin:0 0 4px;color:var(--deep);display:flex;align-items:center;gap:8px;}
+.section-title::before{content:"";width:9px;height:9px;background:var(--gold);transform:rotate(45deg);display:inline-block;flex-shrink:0;}
+.detail-head h2{display:flex;align-items:center;gap:8px;}
+.detail-head h2::before{content:"";width:9px;height:9px;background:var(--gold);transform:rotate(45deg);display:inline-block;flex-shrink:0;}
+.section-hint{color:var(--muted);font-size:13px;margin:0 0 16px;}
+
+.tier{margin-bottom:22px;}
+.tier-label{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;}
+.grid-classes{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;}
+.class-btn{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px 10px;cursor:pointer;text-align:center;transition:.15s;
+}
+.class-btn:hover{border-color:var(--deep);transform:translateY(-2px);box-shadow:0 4px 14px rgba(13,74,58,.10);}
+.class-btn .kname{font-family:var(--serif);font-weight:700;font-size:18px;color:var(--deep);}
+.class-btn .kcount{font-size:11px;color:var(--muted);margin-top:2px;}
+.class-btn.warn{border-color:var(--gold);}
+.class-btn.warn .kcount{color:var(--gold);font-weight:600;}
+
+.guru-list{display:flex;flex-direction:column;gap:8px;}
+.guru-row{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:13px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;
+}
+.guru-row:hover{border-color:var(--deep);}
+.guru-row .gname{font-weight:600;font-size:14.5px;}
+.guru-row .gmeta{font-size:12px;color:var(--muted);}
+.guru-row.empty{opacity:.55;font-style:italic;}
+
+.detail-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin-top:14px;}
+.detail-head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:14px;}
+.detail-head h2{font-family:var(--serif);font-size:24px;margin:0;color:var(--deep);}
+.back-link{background:none;border:none;color:var(--deep);font-weight:600;font-size:13px;cursor:pointer;padding:6px 0;display:inline-flex;align-items:center;gap:4px;}
+.back-link:hover{text-decoration:underline;}
+
+.teacher-block{margin-bottom:18px;}
+.teacher-block h3{font-size:14.5px;margin:0 0 8px;display:flex;align-items:center;gap:8px;}
+.teacher-name-editable{
+  border:1px dashed var(--gold);border-radius:6px;padding:4px 8px;font-size:13px;background:#fdf9ee;color:var(--gold);cursor:pointer;
+}
+table.slist{width:100%;border-collapse:collapse;font-size:13.5px;}
+table.slist th{text-align:left;color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;padding:6px 10px;border-bottom:1px solid var(--line);}
+table.slist td{padding:8px 10px;border-bottom:1px solid #eee;}
+table.slist tr:hover td{background:#f6f4ec;}
+.mini-btn{background:var(--deep);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;}
+.mini-btn:hover{background:var(--deep-2);}
+.mini-btn.ghost{background:none;color:var(--deep);border:1px solid var(--deep);}
+.add-student-row{margin-top:10px;display:flex;gap:8px;}
+.add-student-row input{flex:1;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-size:13px;}
+
+.notice{background:#fdf3e3;border:1px solid var(--gold-soft);color:#6b5417;padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:14px;line-height:1.5;}
+
+/* Journal form */
+.journal-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:0;overflow:hidden;margin-top:14px;}
+.journal-header{background:#f6f4ec;padding:22px 24px;border-bottom:1px solid var(--line);}
+.journal-title{font-family:var(--serif);font-size:22px;font-weight:700;text-align:center;letter-spacing:.03em;color:var(--deep);text-transform:uppercase;margin:0 0 16px;}
+.jfield{display:flex;gap:8px;font-size:13.5px;margin-bottom:6px;}
+.jfield label{width:150px;font-weight:600;color:var(--deep-2);flex-shrink:0;}
+.jfield .val{border-bottom:1px dotted var(--muted);flex:1;padding-bottom:2px;}
+.journal-body{padding:20px 24px;}
+.table-scroll{
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  border-radius:6px;
+  /* garis tipis di tepi supaya guru sadar tabelnya bisa digeser ke samping */
+  box-shadow: inset -8px 0 6px -8px rgba(0,0,0,.18);
+}
+table.jtable{width:100%;min-width:640px;border-collapse:collapse;font-size:13px;}
+table.jtable th{background:var(--deep);color:#fff;padding:9px 8px;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;border:1px solid var(--deep);}
+table.jtable td{border:1px solid var(--line);padding:6px 8px;vertical-align:top;}
+table.jtable td input{width:100%;border:none;background:transparent;font-size:13px;font-family:var(--sans);padding:3px;}
+table.jtable td input:focus{outline:1px solid var(--gold);border-radius:3px;}
+table.jtable td.no{text-align:center;color:var(--muted);width:34px;}
+table.jtable td.rm{text-align:center;width:30px;}
+table.jtable td.rm button{background:none;border:none;color:var(--danger);cursor:pointer;font-size:15px;}
+.journal-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-weight:600;font-size:13.5px;cursor:pointer;font-family:var(--sans);}
+.btn.primary{background:var(--deep);color:#fff;}
+.btn.primary:hover{background:var(--deep-2);}
+.btn.gold{background:var(--gold);color:#241d05;}
+.btn.gold:hover{filter:brightness(.95);}
+.btn.outline{background:none;border:1px solid var(--line);color:var(--ink);}
+.btn.outline:hover{border-color:var(--deep);}
+.save-status{font-size:12px;color:var(--muted);align-self:center;}
+
+.searchbox{width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;font-size:14px;margin-bottom:16px;font-family:var(--sans);}
+.picklist{display:flex;flex-direction:column;gap:6px;max-height:520px;overflow:auto;}
+.pick-row{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+.pick-row:hover{border-color:var(--deep);background:#f6f4ec;}
+.pick-row .pn{font-weight:600;font-size:13.5px;}
+.pick-row .pk{font-size:12px;color:var(--muted);}
+
+footer.print-sign{margin-top:26px;display:flex;justify-content:flex-end;font-size:13px;}
+.print-sign-inner{text-align:center;width:220px;}
+.print-sign-inner .place{margin-bottom:60px;}
+
+#printArea{display:none;}
+@page{ size:A4 portrait; margin:14mm 12mm; }
+@media print{
+  html, body{width:100%;height:auto;background:#fff !important;}
+  body *{visibility:hidden;}
+  #printArea, #printArea *{visibility:visible;}
+  #printArea{position:absolute;top:0;left:0;width:100%;padding:0;margin:0;background:#fff;display:block;}
+  header.top, nav.tabs, .journal-actions, .searchbox, .app > *:not(#printArea){display:none !important;}
+  .print-page{page-break-after:always;width:100%;}
+  .print-page:last-child{page-break-after:auto;}
+  .print-frame{margin:0 !important;}
+}
+.print-frame{border:1.5px solid #000;padding:22px 26px 26px;}
+
+@media (max-width:640px){
+  .jfield{flex-direction:column;}
+  .jfield label{width:auto;}
+}
+.storage-status{
+  margin-top:10px;
+  padding:8px 14px;
+  border-radius:8px;
+  font-size:12.5px;
+  font-weight:600;
+  letter-spacing:.01em;
+  display:inline-block;
+}
+.storage-checking{ background:#eee; color:#666; }
+.storage-online{ background:#e1f3ea; color:#0d4a3a; border:1px solid #b7dfc7; }
+.storage-offline{ background:#fdecec; color:#8a2222; border:1px solid #f3b9b9; }
+.print-picker{
+  margin:14px 0 20px;
+  padding:12px 16px;
+  background:#f4f1e6;
+  border:1px solid var(--line);
+  border-radius:8px;
+}
+.print-picker label{display:block;font-weight:700;font-size:13px;color:var(--deep-2);margin-bottom:8px;}
+.print-picker-row{display:flex;gap:10px;flex-wrap:wrap;}
+.print-picker-row select{flex:1;min-width:140px;padding:9px 10px;border-radius:6px;border:1px solid var(--line);font-size:14px;background:#fff;}
+.print-picker-row button{white-space:nowrap;}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <button id="adminToggleBtn" onclick="toggleAdminLogin()" title="Admin"
+      style="position:absolute;top:14px;left:14px;z-index:3;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);color:#fdfaf0;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:13px;opacity:.5;line-height:1;">🔒</button>
+    <div class="bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
+    <div class="eyebrow">MTsN 3 Kota Padang · Tahun Pelajaran 2026/2027</div>
+    <h1>Jurnal Hafalan Tahfiz</h1>
+    <div class="ornament-divider"></div>
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="kelas">Pilih Kelas</button>
+      <button class="tab-btn" data-tab="guru">Pilih Guru Pembimbing</button>
+      <button class="tab-btn" data-tab="cari">Cari Siswa &amp; Isi Jurnal</button>
+    </nav>
+  </header>
+
+  <!-- KELAS TAB -->
+  <section class="panel active" id="panel-kelas">
+    <div id="kelasList">
+      <p class="section-title">Pilih Kelas</p>
+      <p class="section-hint">Kelas dengan tanda <strong style="color:var(--gold)">●</strong> belum punya guru pembimbing tetap — bisa diisi manual.</p>
+      <div class="print-picker">
+        <label for="printKelasSelect">🖨️ Cetak / unduh jurnal langsung per kelas</label>
+        <div class="print-picker-row">
+          <select id="printKelasSelect"></select>
+          <button class="btn gold" id="printKelasPickBtn">🖨️ Cetak PDF</button>
+          <button class="btn outline" id="excelKelasPickBtn">⬇ Unduh Excel</button>
+        </div>
+      </div>
+      <div id="kelasGrids"></div>
+    </div>
+    <div id="kelasDetail"></div>
+  </section>
+
+  <!-- GURU TAB -->
+  <section class="panel" id="panel-guru">
+    <div id="guruList">
+      <p class="section-title">Pilih Guru Pembimbing</p>
+      <p class="section-hint">Klik nama guru untuk melihat kelas dan siswa yang dibimbingnya.</p>
+      <div class="guru-list" id="guruListInner"></div>
+    </div>
+    <div id="guruDetail"></div>
+  </section>
+
+  <!-- CARI / JURNAL TAB -->
+  <section class="panel" id="panel-cari">
+    <p class="section-title">Cari Siswa</p>
+    <p class="section-hint">Ketik nama siswa untuk langsung membuka jurnal hafalannya.</p>
+    <input class="searchbox" id="searchInput" placeholder="Ketik nama siswa... contoh: Aisyah">
+    <div class="picklist" id="searchResults"></div>
+  </section>
+
+  <!-- JOURNAL VIEW -->
+  <section class="panel" id="panel-journal"></section>
+
+  <div id="printArea"></div>
+</div>
+
+<script>
+/* ================= DATA ================= */
+// Struktur: CLASSES["7.1"] = { note: optional, groups: [ {guru:"nama", students:["A","B",...]} ] }
+const CLASSES = {
+"7.1": {groups:[
+  {guru:"Zaina Rahmawati, S.PdI", students:["Abdurrahman Affan Yuri","Aisyah Maulida Dafis","Akbar Nurdaffa Pratama","Alfarizi Al Hasby Deza","Aliya Ramadhani","Arkan Vallden Permana","Az Zahra Qiandra Ramadhani","Cahaya Mey Jihan","Chantika Adelia Disya","Dhea Rahma Hikmatullah","Emely Johari Richel","Femina Qurratuaini","Fiftahul Rizki Azzahra","Harits Lutfi Arsyad","Irfan Hanif Kusasi","Kahfi Al Farabi"]},
+  {guru:"Agung Rachmad Maulana, S.Pd", students:["Khanza Joazra Putri","Muhammad Athaya Yurifanov","Muhammad Luthfi","Muhammad Raffa Aditia","Muhammad Rasyid Budiman","Nafisah Lufiah","Naura Myiesha Awanta","Naura Ramadhani Sipahutar","Nayra Qania Ramadhani","Qeireen Adra Marissa","Siti Adara Reana Azzahra","Siti Airin Rinewa","Syifa Ayu Lestari","Talitha Syahira Ramadhani","Tasya Nairatul Jannah"]}
+]},
+"7.2": {groups:[
+  {guru:"Esimardiani, S.Pd", students:["Abdi Negara","Afdal Alvaro Pratama","Al Fathur Rahman Fajrin","Al Malik Nugraha","Alifia Fazila","Alvin Rahayu","Aqsha Alwenda","Arifah Qalbiya","Assyifa Alya Ramadhani","Asyahla Wahyudhatul Illahi","Bima Putra Pratama","Dzikri Prasetya","Faiz Desman Husnul","Fajra Nazhifah","Ghina Kamila Febriani","Inaya Kadziah Amanta"]},
+  {guru:"Dewi Suryani, S.Ag", students:["Irsyad Rahadi","Mahdiyatu Syauqia","Muhamad Hafiz","Muhammad Arkan Said","Muhammad Hasbi Almubarok","Muhammad Pradipta Azzama","Muhammad Rafa Alfaizi","Muhammad Razziq Edison","Nazwa Vidianti Balqis","Nur Syakila Adibah","Reisya Khumaira Hamdichi","Silfa Ar Nasya","Syaquinna Nadhifatul Zhafirah Yuzha","Teguh Mahardika","Yuanda Asrini Iqbal","Zaskia Khairunnisa"]}
+]},
+"7.3": {groups:[
+  {guru:"Ranti Efrita, S.Pd", students:["Ahlam Fakira","Alaric Gavriel Hanata","Alfatih Kenzie Pratama","Alif Rizky Ramadhan","Anindya Ratu Fahhama","Annisa Shabrina Bendry","Atiqah Zahra Jeklen","Dzikran Maulana Syatari","Fareeq Muhammad Mumtazmiyar","Fathan Al Maisan Rahmat","Fathan Athar Putra","Fathur Rahman","Fauzan Firman","Febby Nurin Andriesti"]},
+  {guru:"Feni Silvia Wahyuni, S.Sn", students:["Gading Maulana","Hanifah Junita Putri","Idham Kholiq","Muhammad Jabir Ali","Muhammad Wildan Rafif","Naura Delfina Putri","Nazhifatul Ilmi","Rabbil Ramadhan","Radja Putra Adna","Rafif Mahfuzh","Shally","Sultan Athar Abyasa","Syanas Zahranie Sudarman","Zahra Febrizal Anjani"]}
+]},
+"7.4": {groups:[
+  {guru:"Sri Wahyuni, S.Pd", students:["Abdul Rasyid","Aina Julira Safriadi","Alyfa Meka Mumthazha","Arjuna Syahrizal Wijaya","Arya Guna Pratama","Asraf Ammar","Assyva Bilqish Zulti","Balqis Salsabila Humaira","Ervito Pramaditya","Faruuq Muhammad Mumtazmiyar","Inara Miladya Fitri","Ira Atriya","Janeeta Putri Rahimi","Kirana Khanza Azahra","Lathif Qilbi Alnito"]},
+  {guru:"Dra. Linda Virgorita", students:["Lenggo Bovan","Luthfi Yazid","M. Ihsan Rusdi","Muhammad Hadi Rahman","Nafisah Azizi","Naura Atsilah Gus Elanda","Nayla Anggelina Firdaus","Ra'uf Al Ghani","Rayhan Masyarif Ilham","Razzaq Adisit Pratama","Salim Maulana","Saydul Akram","Shavina Meysha Yuniza","Tegar Aprillio Novryan"]}
+]},
+"7.5": {groups:[
+  {guru:"Itin, S.Pd", students:["Adeeva Rizki Annada","Adham Abyhi Candra","Adid Hazim Arsyi","Afifah Anugrah","Agnifa","Alby Dika Araya","Aqshel Alwenda (Inklusi)","Aviqa Alzahra","Azka Aldric","Basma Khayrunnisa Mecca","Dirga Assyauqi Efra","Dzakira Hasna Sumelko","Farlan Fidro Marselo","Fernando Aprilio","Fikra Aulia"]},
+  {guru:"Elmarika, S.Pd", students:["Hazis Kia Abdulah","Huuriyah Fahnur","Kayla Ilmi Syakila","Marchel Aprilian","Marizka Renanda","Mikhailzovick Fathi Adlkhalifi","Muhamat Rafi","Nadhira Almaira","Nafisya Ulul Najma","Niswah Aqilla","Rivo Launuru","Sadira Vernandes","Sibran Malwiya","Zakiy Hafid Zul Haq","Zhafran Aqila Nalqisthi"]}
+]},
+"7.6": {groups:[
+  {guru:"Yuyun Fadhillah, S.Pd", students:["Adzharul Dzaki","Adzkiya Raisha Nuramdhani","Afrian Aska Putra","Ahmad Rafka Pranaja","Aisya Amira Azzahra","Aisyah Almalaika","Aisyah Ayudiah Inara","Alif Ansyar Wibowo","All Hafidz Maulana Arifin","Arya Daffa Ozora","Athifa Henita Ramadhani","Aulia Zahra Khairunnisa","Daffa Mawadef Pratama","Fahry","Fatimah Az Zahrandri","Fayruz"]},
+  {guru:"Elpi Yanti, S.Pd", students:["Ghozi Adra","Kanaya Ramadha","Mikeyla Febri Jamal","Nafeeza Akila Chandra","Nataya Humairah Adza","Naura Humaira","Nazura Novia Zahra","Prince Evan Wijaya","Rafa Fitran Ramadhan","Rafi","Rahmad Haikal","Sanraiza Tri Deni","Suhatri Afdal","Syahmadia Shabri","Syaidina Ali Rahmat","Zakhy Okta Riski"]}
+]},
+"7.7": {groups:[
+  {guru:"Elmidawati, SE", students:["Aditya Rizki","Aina Thalita Azahran","Akbar Nurdaffa Pratama","Akta Akri Ramadhan","Andrea Adam Maulana","Anedria Julia Ramdha","Aqeela Nadira Salwa","Azizah Nur Syakinah","Cahaya Sriwanda","Davin Kurniawan","Fadlan Qolbi Simon","Farhan Agustian","Fathir Dwiryo","Fauzan Richardo","Hasna Salsabila"]},
+  {guru:"Tiara Arini, S.Pd", students:["Maulana Dzakwan Salim","Melisa Syahara","Muhammad Khairi Al Ghiffari","Muhammad Rhozaq","Muhammad Shauky","Naura Nadhifa Putri","Nauratul Alfiah","Nazwa Sari Putri","Raysa Ayskaa Qirani","Resti","Sabda Halim","Syafiyah Khansa Adibah","Syakira Miftahul Husni","Yusuf Arrazaq","Zidan Alfarezi"]}
+]},
+"7.8": {note:"Belum ada guru pembimbing tetap untuk kelas ini.", groups:[
+  {guru:"", students:["Afif Khairi Abdullah","Afifah Shafiya","Aisyah","Aldo Triwijaksono","Alikha Nur Zahirah","Annisa Putri Harahab","Aqifa Faiha Adam","Arida Khoirun Nisa","Asrhaf Aditya","Azkia Samwa Saufa","Azzana Fitrianingsi","Farah Aura Candra","Ghaziya Hafiza Huda","Hafiza El Hazima Yazmine","Hamzah Karim Amrullah","Hana Shidqiya","Khaira Lathisha Wendo","Khalif Rishell Alby","Maita Sabani Putri","Melvin Zafran Hendrig","Muhammad Adhyasta Mahanipuna","Muhammad Jerry Caniago","Mutiara Nuraimie Putri","Nabila Miftahu Soumy","Nadhifatul Adzkia","Qurratu Aini","Salwa Fisalsabila","Sania Agustina","Shakilla Aisy Srikandi","Tenisya Putri Delsa","Yudi Naza Oktara","Zizian Putri"]}
+]},
+
+"8.1": {groups:[
+  {guru:"Rosni Amrida, S.Pd", students:["Abi Armen Saputra","Ahmad Yafiq Imam Rafif","Ahmed Zidane Ash Shiddiq","Aisyah Afiqah","Aqeela Al-Hazima Hendri","Arfan Fawwaz Baadillah","Asyfa Wira Junior","Asyifa Zahra","Aurel Lidia Junifer","Azzahra Putri Harvina Siregar","Delisa Kamila","Farra Junia Nofriani","Gilang Mhedy Pratama","Hamdan Vallden Permana","Insyira Naura Ayudia","Iqbal Eka Putra"]},
+  {guru:"Hanifah, MA", students:["Keisya Athalla Guciano","Martin Julietno","Mohammad Kean Santang","Muhamad Dannis Zaidan","Muhammad Haeikal","Muhammad Maulana Al Farisi","Muhammad Naoki Arkansyah","Muhammad Rifaa'Taufiiqul Hakim","Muhammad Syafiq Sidiq","Najwa Khaira Wilda","Rajafi Irsyad","Rana Ulfah Yonoves","Saskia Khairunnisa","Syukurillah Dzakiah Affa","Violla Khairunisa","Yogi Yulian Putra"]}
+]},
+"8.2": {groups:[
+  {guru:"Nurrahmania Hasanah, S.Pd", students:["Adrian Firman Sahiid","Aisyahtul Fatanah","Alfiansyah Ramadhan","Alif Mauala Martin","Annisa Zakariya","Asyila Aura Medina","Chelsea Apriliani Putri","Ehsan Izdihara","Fikri Askari Badran","Fiona Mardelina","Habib Muhammad Efendi","Irfan Syauqi","Jefri Geopandi","Jihan Khaliqa Dzahin","Khairul Mukminin","Khania Mey Azzhurri","Latisya Fawwazni Harfial"]},
+  {guru:"Irwan Putra, S.Ag", students:["Muhammad Razkha Fajrisam Pratama","Muhammad Reyhan Debrian","Muhammad Vikran Edison","Nadara Zaichilla","Quinsa Marwa Firjani","Raisa Alsyah Lathifa","Raziq Tsany","Reihan Saputra","Riffi Alfarizhi","Rijalul Hafis Usman","Rivaldho","Salim Al-Fath Abbas","Vanesha Aprillioni","Zaskya Salsabila","Zila Herdana"]}
+]},
+"8.3": {groups:[
+  {guru:"Yenti Elfina, S.Pd", students:["Abi Rama Nandra","Achmadya Fahreza Adzani","Afifah Azzahra","Ahkdan Ahtaya Ghafar","Ahmad Iqbal Ilma","Aiesyara Ulya Syahdinda","Azzahra Atiiqah Meisya","Bima Anggara","Cakra Ramadhani","Difa Anggraini","Fadlan Zarky Sumelko","Ilham Pratama Ramadhan","Kenzie Alvaro","Lina Maya Anggraini","M. Rizky Pratama","Muhammad Afiqo Jesra"]},
+  {guru:"Leni Marlina, S.Pd", students:["Muhammad Fajri","Muhammad Nurga Ikhra","Muhammad Reza Rizki","Muhammad Sholeh","Mutiara Gemilang","Naila Lista Dewi","Naura Alita Putri","Nisywatun Azrani","Patriyo Ramdhani","Rafki Yusonjazara","Rahmatan Lil'Alamin","Raisya Septiani Putri","Safa Aulia Rashidah","Sanil Aisyah","Viona Quratul Aini"]}
+]},
+"8.4": {groups:[
+  {guru:"Ermaneli, S.PdI", students:["Abdul Aziz Yuhendri","Abdul Gafur","Abel Sri Ayuningsi","Adli Putra Ikhsan","Ainun Nikmah","Aldi Alwi","Andre Syobrian Syah","Aqil Khairullah Sajid","Aurelia Talita Zahra","Avara Umayza Sade","Fadhlan Al Ghafari","Faza Hanifa","Husnul Nazhifa Fithri","Iqbal Hamrullah","Kaka Yudika","Khiflan Rizqi Alfati"]},
+  {guru:"Maisa Fitri, S.Si", students:["Mahbib Rafiqi Fitrah","Meilani Afra Asyifa","Miftah Arum Ferisma","Nailah Badriyyah","Naira Febriani","Nurfahma Kamila","Rahmat Munanda","Raziq Putra Mahendra","Reyhan Ananda Putra","Rosvita Quraini","Shiney Qurrata'Ayuni Vidhiputri","Syara Nurdika Putri","Syirin Alinayyah. R","Yumna Alifah Khansa","Zakira Humayroh"]}
+]},
+"8.5": {groups:[
+  {guru:"Sri Mustika Yuza, S.Pd", students:["Adibul Hanif Al Fawwaz","Aira Khairunnisa","Aqila Faizah Najla","Arlindez Vino Wiratama","Asyifa Miranda","Aurora Ricardo","Azka Fakhrur Razi","Chika Adelia Putri","Dewi Nur Asyfa Samin","Erlangga Putra Ibrahim","Fadilah Rahmadani","Fadlan Maulana","Faizia Dhofwatul 'Aisy","Fathan Ilhami Syalendra","Fazyah Az-Dzikra"]},
+  {guru:"Muhammad Gusdi Putra, S.PdI", students:["Kenzie Rabbani Devira","Khairul Azzam","Khaysa Arifa Devita","Liran Kirana Putri","Meylani Saputri","Muhammad Arja","Muhammad Ashraf Ruwayfi","Muhammad Farid","Muhammad Raffa","Nazwa Nur Afifa","Reffi Azura","Rhevil Padillah","Riska Sri Rahayu","Rizka Vanisa Alya","Rofiinaufal Maess"]}
+]},
+"8.6": {groups:[
+  {guru:"Nurzani Aisyah, S.Pd", students:["Adrinov Sri Eko","Agil Ramadhan Putra","Al Haqq Islam","Aqeel Al Ashro","Aqila Azzura","Avika Dewi","Dela Novita","Fahira Yonanda","Fandhi Putra Nugraha","Fatan Rafqa Rizali","Ferlian Yusuf","Fiorenza Deverik","Galih Zaqwan Ashyarie","Hanifah Putri Ayunda","Haseena Sabrina Efendi","Khofifa Arsila Putri"]},
+  {guru:"Pirmadoni, S.Pd", students:["Luqyana Qaireen Ameera","Muhammad Azlan Azizi Irta","Muhammad Dzeko Siddiq","Muhammad Farlan Alvares","Muhammad Fathir","Nadifa Husna","Nadya Alecia Elvina Putri","Nazhifa Khayira Zafik","Nurul Sonia","Regiano Rastafatriansyah","Reyhan Maulana Putra","Sajadah Cinta Dy Nobelty","Taqiya Humaira","Zahfran Abdillah","Zayed Muhammad Arif","Zidan Alfariski"]}
+]},
+"8.7": {note:"Belum ada guru pembimbing tetap untuk kelas ini.", groups:[
+  {guru:"", students:["Alkhaliffi Dzikri Pratama","Alkhalifi Achmad Ashraf","Amelia Faiza Ramadhani","Annisa Khairatul Zulfa","Annisa Lathifa","Aqila Putri Hendriani","Asma'Palisha Yusri","Assyifa Ramadhani","Aziz Sisdya Jhonson","Bunga Suci Arumi","Fadhillah Azura Rahman","Faulina","Hafiz Alfiqri","Hanifah Naira Aprilia","Hervan Prasetya Irviansyah","Jerdian Ilham Ramadhan","Khonsa Rahmadani Hidayah","Kirana Alfi Husna","Miza Suliani","Muhammad Al Fathan Arsyad","Muhamad Fahri Akbar","Muhammad Fathan Al Rafisi","Muhammad Rezky Mahendra","Nabila Zahratul Khairiyah","Najwa Asyilah Wijaya","Natasya Adelia Putri","Naya Faiha Azzahra","Raffa Arya Hanifan","Reyna Mutiara Putri","Shohibatil Kadishoh","Siti Nurafiqa Jesra","Yasmin Zafirah"]}
+]},
+
+"9.1": {groups:[
+  {guru:"Rahmi Hayati, S.Ag", students:["Aditya Wahyu Permana","Afifa Diany Puspasari","Ahmad Fauzi","Alminur Falaqi","Annisa Zaharany","Aqilla Fatihah Risti","Aufaa Ruhama Wazna","Bayu Aradhana Tito","Edo Putra Widarsya","Fatiatul Azra","Fayeza Deswen","Filzah Fakhira Nalfi","Fiona Patel","Friya Mulyana Fitri","Khairunissa Samzul Putri","Khalista Aldiyar Putri"]},
+  {guru:"Fitri Suryani, S.Ag", students:["Khodijah Turrohmi Simamora","Muhammad Dzakirul Fathin","Muthia Rahma Sani","Ningrum Maharani Fitri","Nisaul Latifah","Qori Umairah Nofita","Raihana Salsabila","Rindu Asmara","Siti Annisa","Syakila Putri Dewi","Syifa Kurniawati","Sylfa Damara Putri","Talita Midori","Yodha Maisa Putra","Zahira Cahaya Fatima"]}
+]},
+"9.2": {groups:[
+  {guru:"Rahmawati, S.Ag", students:["Alif Defran Mulya","Arif Arwi Al Amin","Arsy Aulia Dirly","Arya Ramadhan","Assyfa Kanza","Asyraf Khairul Azzam","Atnan Oktario","Aulia Rahmi","Bayu Novriyanto","Brilliant Novero Perdana","Elsa Aprilia Nuardi","Farhan Kurnia Putra","Hamizan Hidayat","Hazri Al-Tami","Ibnu Aditya","Kayla Azalia Muharid"]},
+  {guru:"Raja Zomi Caniago, S.Si", students:["Kenzie Melfino","Kurnia Sandy","Liyana Mahira","Muhammad Habil Al Fikri","Muhammad Afif Al Fathan","Muhammad Dimas Al Rezky","Muhammad Rafa Afrizal","Mutiara Hati Nurzal","Nadhira Azzahwa Mareld","Nadien Aprilia Putri","Nazifa Pendriana","Nikita Afriani","Radit Aprilio","Salsabila Qur'ratua'in","Syafira Chairul Nisa","Zahra Ramadhani"]}
+]},
+"9.3": {groups:[
+  {guru:"Sarly Lidya Roza, S.PdI", students:["Ahmad Halim Lubis","Aprilia Rizvi","Asysyifa Hana Yusri","Bulan Ramadhani","Chintya Ramadhani","Claudia Zizi Cambelia","Dinni Aliyah","Fadli Irka Putra","Fakhri Anwar","Hafiza Zahara","Hafizatun Nazjwa","Luyisa Tertia Putri","Maulana Fadlan Said","Millah Hanifah","Muhamad Fatih Fabrizio","Muhammad Arbi"]},
+  {guru:"Hayati Gemala Putri, S.Pd", students:["Muhammad Aufar Alfalaq","Muhammad Zharif Pratama","Nadhine Aprilia Yolanda","Nazira Latisya Ayu","Nazwa Febriani","Nevan Jefria Putra","Nidzaam Al Nafiis","Novia Wisfandri","Raditya Aurellio","Rafka Aditya Permana","Rahmat Fahrizy","Raihan Wahyudi","Saidah Maulidia Marhamah","Syafa Khaifatul Janah","Syifa Humaira","Zakia Davina"]}
+]},
+"9.4": {groups:[
+  {guru:"Sendra, S.Pd", students:["Afifa Ardelia Jeklen","Alwisa Alfikri","Anaqil Van Dova","Arwajra Nugraha","Ashaina Qinthara","Assyifa Luthfiana Putri","Aurel Khairani Kartika","Aurelya Sephia Arlo","Ayrani Queen Malika","Bagas Prasetya","Chiko Aprilio Efendi","Fajrina Yasmin","Fastabikul Khairani","Hidayatullah Alif Adlika","Ihsan Al-Haadiy","Jullyan Razhel"]},
+  {guru:"Gondan Kembar Sari, S.Pd", students:["Lovyta Khairunnisa","Miftahul Khairiandri","Muhammad Aldi","Muhammad Azzihran","Muhammad Ibnu Sabil","Nada As Syifa","Nadia Fazila","Nadratul Hasana","Nafisha Syuhara","Nazua Cahayu","Rhaisyifa Nur Fardhilah","Sawila Istiani","Syally Naura Rahmadini","Tifatul Quraini","Valdan Redwino Putra"]}
+]},
+"9.5": {groups:[
+  {guru:"Supriyanto, S.S", students:["Afika Mahiya Zio","Anayla Safana Elysia","Asyifa Febrina","Atika Fairuz Dzakiyya","Aulia Rahma","Auliyya","Badri Alfisyahri","Daffa Khoiri","Dania Mardani","Denada Pratama Irwan","Fahri Qoirudin","Fajar Richardo","Fathir Nazhirul Asrofi","Fauzan Syahreza","Hafiz Al Furqon","Ibrahim Alwaddud"]},
+  {guru:"Elvy Zain, S.Pd", students:["Kayyisah Yosra Zelia Pasha","Lutfia Febrika Hanifah","Luthfi Muazzam","Marini Latifah Anom","Maulana Ihsanul Mu'arif","Muhammad Akbar Guci","Muhammad Amri Aziz","Natasya Apricelia Hendriani","Naufal Azka Kurniawan","Nur Izzah","Ragil Wulandari","Rama Alvaro","Rezki Adytia Putra","Sayed El Kamil Naeem","Syantika Afrillina Sya'dah","Talita Zahirah Octavia"]}
+]},
+"9.6": {groups:[
+  {guru:"Anur Gusnini, S.Pd", students:["Alvero Gutawa","Alya Jazilah Mufa","Anugrah Fathir Ramadhan","Arsya Khoirullah Ayedis","Assyfa Anggraini","Cyntia Ardzha Putri","Farhan Mubarak","Faris Firman Rafi","Fathan Al Habshi","Huzzaifah Azmi","Jumadil Nabil Hamzah","Kelvin Hanson","Lakeisha Alia Utama","Luthfi Lifhendri","Mila Fadillah","Mourel Finanda","Muhammad Atha"]},
+  {guru:"Masni Asri Dewi, S.Pd", students:["Muhammad Azka Ridho Maulana","Oktaviona Dasril","Qotrunada Syafa Firjani","Ragel Mahesa Putra","Rahma Fauziah","Rahma Hidayah Radatullah Aiti","Randya Arghareal Putra","Richy Ramadhani","Riska Basrita Yanti","Salwa Zhaafirah Athari","Syafa Syaputri","Syahid Rusmana","Syauqi Aqil Amhani","Syifa Mustika","Yurizio Desavatino"]}
+]},
+"9.7": {groups:[
+  {guru:"Yulpaheri, S.Pd", students:["Afifah Zahara","Aini Durratul Hikmah","Akbar Hesrinov Dasky","Anggi Satria Ramadhan","Askiyaun Nafsi","Ayatul Husna","Azka Umara","Fanny Aninda Chandra","Gandaril Huta Galung","Hafidza Renata Adean","Haris Ramadhan","Keyzia Aurelia Putri","Khanaya Tabita Assyfa","Maysha Azzahra","Muhamad Pebri Hendrika","Muhammad Khairan Sabil"]},
+  {guru:"Dra. Murhaina", students:["Muhammad Lutfi Taufikillah","Muhammad Zaky Anshari","Muhammad Zikri","Nadhira Putri Arini","Niken Pratama Putri","Putri Khairah","Rabifa Hamna","Radhitya Hanaldhi Putra","Rayhan Muhamad Putra","Rhozaqy Aidinurindra Al Hakim","Syahian Gigih Rialdy","Syahiratun Afifah","Syifa Jona Syafira","Tiara Apriyani","Tiara Marisa Putri","Zhilfy Rusdan Zenov"]}
+]},
+"9.8": {groups:[
+  {guru:"Zainul Arif, S.PdI", students:["Abdul Sukma","Al Akbar","Alvin Azka Susanto","Denia Sri Wahyuni","Dzakwan Miftahul Rizki","Faidah Azmi Elfitri","Fiola Ananda","Hafizah Nurhabibah","Inka Syahreyza","Karina Putri Gamesya","Keyla Azalia Muharid","Keyla Deliska","Miftahul Jannah Zafira","Muhammad Fadil Nurrohman"]},
+  {guru:"Nurdiyati, S.Pd", students:["Muhammad Hafizh","Muhammad Rauf Alghani","Muhammad Yusron Rafi'i","Putra Pratama","Rado Andrian","Rahma Nurul Asysyifa","Ratu Asiah Nahda","Rawiga Elya","Rena Putri Anggola","Rumi Arthapurna Vidhiputra","Sunni Maisarah","Yudha Ilham Maulana Saputra","Zahwa Wahyu Apriliani","Zaqky Ramadhan"]}
+]}
+};
+
+const TINGKAT = {"7":["7.1","7.2","7.3","7.4","7.5","7.6","7.7","7.8"],"8":["8.1","8.2","8.3","8.4","8.5","8.6","8.7"],"9":["9.1","9.2","9.3","9.4","9.5","9.6","9.7","9.8"]};
+
+/* ================= TARGET SURAH PER TINGKAT (SESUAI JUZ) =================
+   Kelas 7 -> Juz 30 (Surah 78 An-Naba' s.d. 114 An-Nas)
+   Kelas 8 -> Juz 1  (Al-Fatihah, dan Al-Baqarah ayat 1-141)
+   Kelas 9 -> Juz 2  (Al-Baqarah ayat 142-252, masih surah yang sama) */
+const JUZ30_SURAH = [
+  "78. An-Naba'","79. An-Nazi'at","80. 'Abasa","81. At-Takwir","82. Al-Infitar","83. Al-Mutaffifin",
+  "84. Al-Insyiqaq","85. Al-Buruj","86. At-Tariq","87. Al-A'la","88. Al-Ghasyiyah","89. Al-Fajr",
+  "90. Al-Balad","91. Asy-Syams","92. Al-Lail","93. Ad-Dhuha","94. Al-Insyirah","95. At-Tin",
+  "96. Al-'Alaq","97. Al-Qadr","98. Al-Bayyinah","99. Az-Zalzalah","100. Al-'Adiyat","101. Al-Qari'ah",
+  "102. At-Takatsur","103. Al-'Asr","104. Al-Humazah","105. Al-Fil","106. Quraisy","107. Al-Ma'un",
+  "108. Al-Kautsar","109. Al-Kafirun","110. An-Nasr","111. Al-Lahab","112. Al-Ikhlas","113. Al-Falaq","114. An-Nas"
+];
+const JUZ1_SURAH = ["Al-Fatihah","Al-Baqarah (ayat 1–141)"];
+const JUZ2_SURAH = ["Al-Baqarah (ayat 142–252)"];
+
+function surahListForKelas(kelas){
+  const grade = String(kelas).split('.')[0];
+  if(grade==='7') return JUZ30_SURAH;
+  if(grade==='8') return JUZ1_SURAH;
+  if(grade==='9') return JUZ2_SURAH;
+  return [];
+}
+
+function surahOptionsHtml(kelas, current){
+  const list = surahListForKelas(kelas);
+  let found = false;
+  let opts = '<option value="">— pilih surah —</option>';
+  list.forEach(s=>{
+    const sel = s===current ? ' selected' : '';
+    if(s===current) found = true;
+    opts += `<option value="${s.replace(/"/g,'&quot;')}"${sel}>${s}</option>`;
+  });
+  if(current && !found){
+    opts += `<option value="${current.replace(/"/g,'&quot;')}" selected>${current}</option>`;
+  }
+  opts += '<option value="__custom__">✏️ Lainnya (ketik manual)</option>';
+  return opts;
+}
+
+// Tanggal disimpan dalam format ISO (yyyy-mm-dd) supaya cocok dengan
+// input tanggal bawaan browser, tapi ditampilkan dd/mm/yyyy saat cetak/Excel.
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function formatTanggalID(iso){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||'');
+  if(!m) return iso||'';
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
+
+/* ================= STATE / STORAGE ================= */
+let overrides = {}; // { "kelas|idx": {guru:...}, addStudents: {kelas: [names]} }
+let journalCache = {};
+
+function studentKey(kelas, name){
+  // Kunci storage tidak boleh berisi spasi, garis miring, atau tanda kutip,
+  // jadi kelas+nama di-slug-kan agar penyimpanan jurnal tidak gagal.
+  const raw = (kelas+"_"+name).toLowerCase();
+  return raw
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/['"]/g,'')
+    .replace(/[^a-z0-9]+/g,'-')
+    .replace(/^-+|-+$/g,'');
+}
+
+/* Lapisan penyimpanan, urutan prioritas:
+   1. Firestore (Firebase) — dipakai kalau app dibuka sebagai web biasa (mis. di-hosting
+      di Netlify), supaya data tersimpan online dan bisa diakses dari HP/guru mana saja.
+   2. window.storage — dipakai kalau dibuka sebagai artifact di Claude.
+   3. localStorage — jaga-jaga terakhir kalau keduanya tidak tersedia (mis. dibuka
+      langsung dari file manager tanpa koneksi), supaya tombol Simpan tetap jalan
+      walau datanya cuma tersimpan di HP itu saja. */
+const firebaseConfig = {
+  apiKey: "AIzaSyCLPgf-icuH1_KQdAuaoU_wnsqeywu8eZQ",
+  authDomain: "jurnaltahfizdmtsn3.firebaseapp.com",
+  projectId: "jurnaltahfizdmtsn3",
+  storageBucket: "jurnaltahfizdmtsn3.firebasestorage.app",
+  messagingSenderId: "905659888457",
+  appId: "1:905659888457:web:61bebf66564b48424c6098"
+};
+
+const ADMIN_EMAIL = "aldiomfrizi@gmail.com";
+let authReadyResolve;
+const authReady = new Promise(function(res){ authReadyResolve = res; });
+
+let db = null;
+let hasFirestore = false;
+try{
+  if(typeof firebase !== 'undefined'){
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    hasFirestore = true;
+    firebase.auth().onAuthStateChanged(function(user){
+      if(user){
+        if(authReadyResolve){ authReadyResolve(user); authReadyResolve = null; }
+      }else{
+        firebase.auth().signInAnonymously().catch(function(e){
+          console.error('Anonymous sign-in gagal:', e);
+        });
+      }
+    });
+  }
+}catch(e){ console.error('Firebase gagal diinisialisasi, jatuh ke penyimpanan lokal.', e); hasFirestore = false; }
+
+/* ================= MODE ADMIN (hapus jurnal) =================
+   Cara kerja PIN sekarang:
+   - PIN TIDAK ditulis di dalam kode ini lagi (supaya tidak kelihatan siapa pun yang
+     buka "view source"). PIN disimpan sebagai HASH (SHA-256) di penyimpanan yang sama
+     dengan jurnal (Firestore, jadi PIN yang sama berlaku dari perangkat mana pun).
+   - Pertama kali tombol 🔒 diklik dan belum ada PIN yang diset, aplikasi akan minta
+     dibuatkan PIN baru (bukan pakai PIN bawaan/default).
+   - Setelah mode admin aktif, ada tombol "🔑 Ganti PIN Admin" untuk mengganti PIN
+     kapan saja (perlu memasukkan PIN lama dulu).
+   - Ini tetap bukan keamanan tingkat perusahaan (siapa pun yang tahu PIN masih bisa
+     masuk), tapi PIN-nya sendiri tidak lagi bisa dibaca langsung dari kode HTML. */
+
+let isAdminMode = false;
+let currentKelasDetailId = null;
+
+function initAdminMode(){
+  try{ isAdminMode = sessionStorage.getItem('tahfizAdminMode') === '1'; }catch(e){ isAdminMode = false; }
+  updateAdminToggleIcon();
+}
+
+async function toggleAdminLogin(){
+  if(isAdminMode){
+    isAdminMode = false;
+    try{ sessionStorage.removeItem('tahfizAdminMode'); }catch(e){}
+    updateAdminToggleIcon();
+    if(currentKelasDetailId) showKelasDetail(currentKelasDetailId);
+    return;
+  }
+  const pin = prompt('Masukkan password admin:');
+  if(pin === null) return;
+  try{
+    await firebase.auth().signInWithEmailAndPassword(ADMIN_EMAIL, pin);
+    isAdminMode = true;
+    try{ sessionStorage.setItem('tahfizAdminMode','1'); }catch(e){}
+    updateAdminToggleIcon();
+    if(currentKelasDetailId) showKelasDetail(currentKelasDetailId);
+  }catch(e){
+    alert('Password salah.');
+  }
+}
+
+async function gantiPinAdmin(){
+  if(!isAdminMode) return;
+  const lama = prompt('Masukkan password admin yang sekarang:');
+  if(lama === null) return;
+  const baru1 = prompt('Masukkan password admin baru (minimal 6 karakter):');
+  if(baru1 === null) return;
+  if(baru1.length < 6){ alert('Password minimal 6 karakter.'); return; }
+  const baru2 = prompt('Ketik ulang password baru untuk konfirmasi:');
+  if(baru2 === null) return;
+  if(baru1 !== baru2){ alert('Password baru yang diketik tidak sama. Coba lagi.'); return; }
+  try{
+    const user = firebase.auth().currentUser;
+    const cred = firebase.auth.EmailAuthProvider.credential(ADMIN_EMAIL, lama);
+    await user.reauthenticateWithCredential(cred);
+    await user.updatePassword(baru1);
+    alert('Password admin berhasil diganti. Password lama tidak berlaku lagi.');
+  }catch(e){
+    alert('Password saat ini salah atau gagal menyimpan.');
+  }
+}
+window.gantiPinAdmin = gantiPinAdmin;
+
+function updateAdminToggleIcon(){
+  const btn = document.getElementById('adminToggleBtn');
+  if(!btn) return;
+  btn.textContent = isAdminMode ? '🔓' : '🔒';
+  btn.style.opacity = isAdminMode ? '0.95' : '0.5';
+  btn.style.borderColor = isAdminMode ? 'var(--gold)' : 'rgba(255,255,255,.25)';
+}
+
+async function deleteJurnalDoc(kelas, nama){
+  const key = studentKey(kelas, nama);
+  if(hasFirestore){
+    await authReady;
+    await db.collection('tahfiz').doc(firestoreDocId('jurnal:'+key)).delete();
+  } else {
+    // Fallback kalau Firestore tidak aktif: kosongkan datanya di penyimpanan yang dipakai.
+    await storageSet('jurnal:'+key, JSON.stringify([]));
+  }
+}
+
+async function hapusJurnalSiswa(kelas, nama){
+  if(!isAdminMode) return;
+  const konfirmasi = prompt('Ini akan MENGHAPUS PERMANEN seluruh riwayat hafalan "'+nama+'" dan tidak bisa dikembalikan.\n\nKetik nama siswa persis untuk konfirmasi:\n'+nama);
+  if(konfirmasi === null) return;
+  if(konfirmasi !== nama){ alert('Nama yang diketik tidak cocok. Penghapusan dibatalkan.'); return; }
+  try{
+    await deleteJurnalDoc(kelas, nama);
+    alert('Jurnal hafalan "'+nama+'" berhasil dihapus.');
+    showKelasDetail(kelas);
+  }catch(e){ alert('Gagal menghapus: '+(e.message||e)); }
+}
+
+async function hapusJurnalSekelas(kelas){
+  if(!isAdminMode) return;
+  const groups = effectiveGroups(kelas);
+  const allStudents = groups.flatMap(g=>g.students);
+  const kodeKonfirmasi = 'HAPUS '+kelas;
+  const konfirmasi = prompt('Ini akan MENGHAPUS PERMANEN riwayat hafalan SELURUH '+allStudents.length+' siswa di kelas '+kelas+'. Tidak bisa dikembalikan.\n\nKetik teks berikut persis untuk konfirmasi:\n'+kodeKonfirmasi);
+  if(konfirmasi === null) return;
+  if(konfirmasi !== kodeKonfirmasi){ alert('Teks konfirmasi tidak cocok. Penghapusan dibatalkan.'); return; }
+  let gagal = [];
+  for(const nama of allStudents){
+    try{ await deleteJurnalDoc(kelas, nama); }
+    catch(e){ gagal.push(nama); }
+  }
+  if(gagal.length){
+    alert('Selesai dengan sebagian gagal. Gagal menghapus: '+gagal.join(', '));
+  } else {
+    alert('Semua jurnal hafalan kelas '+kelas+' berhasil dihapus.');
+  }
+  showKelasDetail(kelas);
+}
+
+const hasCloudStorage = typeof window.storage === 'object' && window.storage && typeof window.storage.set === 'function';
+
+/* ================= INDIKATOR STATUS PENYIMPANAN =================
+   Banner ini menampilkan ke guru apakah data BENAR-BENAR tersimpan online
+   (Firestore, bisa dilihat dari HP/laptop mana saja) atau cuma tersimpan
+   lokal di perangkat itu saja (karena Firestore gagal/ditolak). */
+function setStorageStatus(mode, detail){
+  const el = document.getElementById('storageStatus');
+  if(!el) return;
+  el.classList.remove('storage-checking','storage-online','storage-offline');
+  if(mode === 'online'){
+    el.classList.add('storage-online');
+    el.textContent = '🟢 Tersimpan online — data ini bisa dilihat dari HP/laptop mana saja';
+  } else if(mode === 'offline'){
+    el.classList.add('storage-offline');
+    el.textContent = '🔴 Tersimpan lokal di perangkat ini saja (' + (detail || 'Firestore tidak terhubung') + '). Data TIDAK akan terlihat di HP/laptop lain. Hubungi admin.';
+  } else {
+    el.classList.add('storage-checking');
+    el.textContent = 'Memeriksa status penyimpanan…';
+  }
+}
+
+// Dokumen Firestore tidak boleh mengandung karakter "/", jadi kunci disaring dulu.
+function firestoreDocId(key){
+  return String(key).replace(/\//g,'_');
+}
+
+async function storageGet(key){
+  if(hasFirestore){
+    try{
+      await authReady;
+      const snap = await db.collection('tahfiz').doc(firestoreDocId(key)).get();
+      setStorageStatus('online');
+      if(snap.exists) return {key, value: snap.data().value};
+      return null;
+    }catch(e){
+      console.error('Firestore get gagal, coba fallback:', e);
+      setStorageStatus('offline', e.code || e.message);
+    }
+  }
+  if(hasCloudStorage){
+    try{ return await window.storage.get(key, true); }
+    catch(e){ return null; }
+  }
+  try{
+    const v = localStorage.getItem('tahfiz:'+key);
+    return v!==null ? {key, value:v} : null;
+  }catch(e){ return null; }
+}
+async function storageSet(key, value){
+  if(hasFirestore){
+    try{
+      await authReady;
+      await db.collection('tahfiz').doc(firestoreDocId(key)).set({
+        value,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      setStorageStatus('online');
+      return {key, value};
+    }catch(e){
+      console.error('Firestore set gagal, coba fallback:', e);
+      setStorageStatus('offline', e.code || e.message);
+    }
+  }
+  if(hasCloudStorage){
+    return await window.storage.set(key, value, true);
+  }
+  localStorage.setItem('tahfiz:'+key, value);
+  return {key, value};
+}
+
+// Cek koneksi Firestore begitu halaman dibuka, supaya guru langsung tahu
+// statusnya tanpa perlu isi jurnal dulu.
+(async function initialStorageCheck(){
+  if(!hasFirestore){
+    setStorageStatus('offline', 'Firebase gagal dimuat di perangkat ini');
+    return;
+  }
+  try{
+    await authReady;
+    await db.collection('tahfiz').doc('_status_check').get();
+    setStorageStatus('online');
+  }catch(e){
+    console.error('Cek koneksi Firestore gagal:', e);
+    setStorageStatus('offline', e.code || e.message);
+  }
+})();
+
+async function loadOverrides(){
+  try{
+    const r = await storageGet('tahfiz-overrides');
+    overrides = r ? JSON.parse(r.value) : {teacherNames:{}, addedStudents:{}};
+  }catch(e){ overrides = {teacherNames:{}, addedStudents:{}}; }
+}
+async function saveOverrides(){
+  try{ await storageSet('tahfiz-overrides', JSON.stringify(overrides)); }catch(e){ console.error(e); }
+}
+
+function effectiveGroups(kelasId){
+  const base = CLASSES[kelasId];
+  const groups = base.groups.map((g,i)=>{
+    const key = kelasId+"|"+i;
+    const guru = (overrides.teacherNames && overrides.teacherNames[key]) || g.guru;
+    return {guru, students:[...g.students]};
+  });
+  const added = (overrides.addedStudents && overrides.addedStudents[kelasId]) || [];
+  if(added.length){
+    if(!groups.length) groups.push({guru:"", students:[]});
+    groups[groups.length-1].students = groups[groups.length-1].students.concat(added);
+  }
+  return groups;
+}
+
+function allTeachers(){
+  const map = {}; // name -> [{kelas, students}]
+  Object.keys(CLASSES).forEach(kid=>{
+    effectiveGroups(kid).forEach(g=>{
+      if(!g.guru) return;
+      if(!map[g.guru]) map[g.guru]=[];
+      map[g.guru].push({kelas:kid, students:g.students});
+    });
+  });
+  return map;
+}
+
+/* ================= NAV ================= */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab==='kelas'){ document.getElementById('kelasDetail').innerHTML=''; document.getElementById('kelasList').style.display='block'; }
+    if(btn.dataset.tab==='guru'){ document.getElementById('guruDetail').innerHTML=''; document.getElementById('guruList').style.display='block'; renderGuruList(); }
+  });
+});
+
+/* ================= RENDER: KELAS GRID ================= */
+function renderKelasGrids(){
+  const wrap = document.getElementById('kelasGrids');
+  wrap.innerHTML = '';
+  Object.keys(TINGKAT).forEach(t=>{
+    const tier = document.createElement('div'); tier.className='tier';
+    const label = document.createElement('div'); label.className='tier-label'; label.textContent='Kelas '+t;
+    tier.appendChild(label);
+    const grid = document.createElement('div'); grid.className='grid-classes';
+    TINGKAT[t].forEach(kid=>{
+      const groups = effectiveGroups(kid);
+      const total = groups.reduce((s,g)=>s+g.students.length,0);
+      const hasEmpty = groups.some(g=>!g.guru);
+      const btn = document.createElement('div');
+      btn.className='class-btn'+(hasEmpty?' warn':'');
+      btn.innerHTML = `<div class="kname">${kid}</div><div class="kcount">${total} siswa ${hasEmpty?'●':''}</div>`;
+      btn.addEventListener('click', ()=>showKelasDetail(kid));
+      grid.appendChild(btn);
+    });
+    tier.appendChild(grid);
+    wrap.appendChild(tier);
+  });
+}
+
+function showKelasDetail(kid){
+  currentKelasDetailId = kid;
+  document.getElementById('kelasList').style.display='none';
+  const groups = effectiveGroups(kid);
+  const note = CLASSES[kid].note;
+  let html = `<button class="back-link" onclick="backToKelasList()">← Kembali ke daftar kelas</button>
+  <div class="detail-card">
+    <div class="detail-head">
+      <h2>Kelas ${kid}</h2>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="color:var(--muted);font-size:13px">${groups.reduce((s,g)=>s+g.students.length,0)} siswa · ${groups.filter(g=>g.guru).length} guru pembimbing</span>
+        <button class="mini-btn" onclick="printKelasJournal('${kid}')">🖨️ Cetak Semua Jurnal (1 PDF)</button>
+        <button class="mini-btn ghost" onclick="exportExcelKelas('${kid}')">⬇ Unduh Excel Sekelas</button>
+        ${isAdminMode ? `<button class="mini-btn" style="background:var(--danger)" onclick="hapusJurnalSekelas('${kid}')">🗑 Hapus Semua Jurnal Kelas Ini</button>` : ''}
+      </div>
+    </div>`;
+  if(note) html += `<div class="notice">⚠️ ${note}</div>`;
+  if(isAdminMode) html += `<div class="notice" style="background:#fdeceb;border-color:#e3b7ae;color:var(--danger);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <span>🔓 Mode admin aktif — tombol hapus jurnal sedang ditampilkan.</span>
+    <button class="mini-btn ghost" onclick="gantiPinAdmin()">🔑 Ganti PIN Admin</button>
+  </div>`;
+  groups.forEach((g,i)=>{
+    const key = kid+"|"+i;
+    html += `<div class="teacher-block">
+      <h3>${g.guru ? '👳 '+g.guru : `<span class="teacher-name-editable" onclick="editTeacher('${kid}',${i})">+ Klik untuk isi nama guru pembimbing</span>`} ${g.guru?`<span style="cursor:pointer;font-size:11px;color:var(--muted)" onclick="editTeacher('${kid}',${i})">(ubah)</span>`:''}</h3>
+      <table class="slist"><thead><tr><th style="width:32px">No</th><th>Nama Siswa</th><th style="width:${isAdminMode?'170px':'120px'}"></th></tr></thead><tbody>
+      ${g.students.map((s,si)=>`<tr><td>${si+1}</td><td>${s}</td><td style="display:flex;gap:6px;">
+        <button class="mini-btn" onclick="openJournal('${kid}', decodeURIComponent('${encodeURIComponent(s)}'), decodeURIComponent('${encodeURIComponent(g.guru||'-')}'))">Isi Jurnal</button>
+        ${isAdminMode ? `<button class="mini-btn" style="background:var(--danger)" title="Hapus jurnal ${s}" onclick="hapusJurnalSiswa('${kid}', decodeURIComponent('${encodeURIComponent(s)}'))">🗑</button>` : ''}
+      </td></tr>`).join('')}
+      </tbody></table>
+      <div class="add-student-row">
+        <input type="text" id="addname-${kid}-${i}" placeholder="Tambah nama siswa baru di grup ini...">
+        <button class="mini-btn ghost" onclick="addStudent('${kid}',${i})">+ Tambah</button>
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+  document.getElementById('kelasDetail').innerHTML = html;
+}
+function backToKelasList(){
+  document.getElementById('kelasDetail').innerHTML='';
+  document.getElementById('kelasList').style.display='block';
+  renderKelasGrids();
+}
+window.backToKelasList = backToKelasList;
+
+function editTeacher(kid, idx){
+  const current = effectiveGroups(kid)[idx].guru;
+  const name = prompt("Nama guru pembimbing untuk kelas "+kid+":", current||"");
+  if(name===null) return;
+  overrides.teacherNames = overrides.teacherNames || {};
+  overrides.teacherNames[kid+"|"+idx] = name.trim();
+  saveOverrides();
+  showKelasDetail(kid);
+}
+window.editTeacher = editTeacher;
+
+function addStudent(kid, idx){
+  const input = document.getElementById(`addname-${kid}-${idx}`);
+  const name = input.value.trim();
+  if(!name) return;
+  overrides.addedStudents = overrides.addedStudents || {};
+  overrides.addedStudents[kid] = overrides.addedStudents[kid] || [];
+  overrides.addedStudents[kid].push(name);
+  saveOverrides();
+  showKelasDetail(kid);
+}
+window.addStudent = addStudent;
+
+/* ================= RENDER: GURU LIST ================= */
+function renderGuruList(){
+  const map = allTeachers();
+  const wrap = document.getElementById('guruListInner');
+  wrap.innerHTML='';
+  Object.keys(map).sort().forEach(name=>{
+    const entries = map[name];
+    const totalStudents = entries.reduce((s,e)=>s+e.students.length,0);
+    const kelasStr = entries.map(e=>e.kelas).join(', ');
+    const row = document.createElement('div');
+    row.className='guru-row';
+    row.innerHTML = `<div><div class="gname">${name}</div><div class="gmeta">Kelas ${kelasStr} · ${totalStudents} siswa</div></div><div class="mini-btn ghost">Lihat →</div>`;
+    row.addEventListener('click', ()=>showGuruDetail(name, entries));
+    wrap.appendChild(row);
+  });
+  const empties = [];
+  Object.keys(CLASSES).forEach(kid=>{ effectiveGroups(kid).forEach(g=>{ if(!g.guru) empties.push(kid); }); });
+  if(empties.length){
+    const row = document.createElement('div');
+    row.className='guru-row empty';
+    row.innerHTML = `<div><div class="gname">Belum ada guru pembimbing</div><div class="gmeta">Kelas ${[...new Set(empties)].join(', ')}</div></div>`;
+    wrap.appendChild(row);
+  }
+}
+
+function showGuruDetail(name, entries){
+  document.getElementById('guruList').style.display='none';
+  let html = `<button class="back-link" onclick="backToGuruList()">← Kembali ke daftar guru</button>
+  <div class="detail-card">
+    <div class="detail-head">
+      <h2>${name}</h2>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="color:var(--muted);font-size:13px">${entries.reduce((s,e)=>s+e.students.length,0)} siswa bimbingan</span>
+        <button class="mini-btn" onclick="printGuruJournal(decodeURIComponent('${encodeURIComponent(name)}'))">🖨️ Cetak Semua Jurnal (1 PDF)</button>
+        <button class="mini-btn ghost" onclick="exportExcelGuru(decodeURIComponent('${encodeURIComponent(name)}'))">⬇ Unduh Excel Semua</button>
+      </div>
+    </div>`;
+  entries.forEach(e=>{
+    html += `<div class="teacher-block">
+      <h3>Kelas ${e.kelas}</h3>
+      <table class="slist"><thead><tr><th style="width:32px">No</th><th>Nama Siswa</th><th style="width:120px"></th></tr></thead><tbody>
+      ${e.students.map((s,si)=>`<tr><td>${si+1}</td><td>${s}</td><td><button class="mini-btn" onclick="openJournal('${e.kelas}', decodeURIComponent('${encodeURIComponent(s)}'), decodeURIComponent('${encodeURIComponent(name)}'))">Isi Jurnal</button></td></tr>`).join('')}
+      </tbody></table>
+    </div>`;
+  });
+  html += `</div>`;
+  document.getElementById('guruDetail').innerHTML = html;
+}
+function backToGuruList(){
+  document.getElementById('guruDetail').innerHTML='';
+  document.getElementById('guruList').style.display='block';
+}
+window.backToGuruList = backToGuruList;
+
+/* ================= SEARCH ================= */
+document.getElementById('searchInput').addEventListener('input', (e)=>{
+  const q = e.target.value.trim().toLowerCase();
+  const res = document.getElementById('searchResults');
+  res.innerHTML='';
+  if(q.length<2) return;
+  Object.keys(CLASSES).forEach(kid=>{
+    effectiveGroups(kid).forEach(g=>{
+      g.students.forEach(s=>{
+        if(s.toLowerCase().includes(q)){
+          const row = document.createElement('div');
+          row.className='pick-row';
+          row.innerHTML = `<div><div class="pn">${s}</div><div class="pk">Kelas ${kid} · ${g.guru||'Guru belum diisi'}</div></div><div class="mini-btn">Buka jurnal →</div>`;
+          row.addEventListener('click', ()=>openJournal(kid, s, g.guru||'-'));
+          res.appendChild(row);
+        }
+      });
+    });
+  });
+});
+
+/* ================= JOURNAL ================= */
+async function openJournal(kelas, nama, guru){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-journal').classList.add('active');
+
+  const key = studentKey(kelas, nama);
+  let rows = [];
+  try{
+    const r = await storageGet('jurnal:'+key);
+    rows = r ? JSON.parse(r.value) : [];
+  }catch(e){ rows = []; }
+  if(rows.length===0){ rows = [{tanggal:todayISO(),surah:'',batas:'',ket:''}]; }
+  renderJournal(kelas, nama, guru, rows);
+}
+window.openJournal = openJournal;
+
+function renderJournal(kelas, nama, guru, rows){
+  const key = studentKey(kelas, nama);
+  const panel = document.getElementById('panel-journal');
+  panel.innerHTML = `
+  <button class="back-link" onclick="closeJournal()">← Kembali</button>
+  <div class="journal-card">
+    <div class="journal-header">
+      <div class="journal-title">Batasan Hafalan Tahfiz</div>
+      <div class="jfield"><label>Nama</label><div class="val">${nama}</div></div>
+      <div class="jfield"><label>Kelas</label><div class="val">${kelas}</div></div>
+      <div class="jfield"><label>Nama Pembimbing</label><div class="val">${guru==='-'?'<em style="color:var(--gold)">belum diisi</em>':guru}</div></div>
+    </div>
+    <div class="journal-body">
+      <div class="table-scroll">
+        <table class="jtable" id="jtable">
+          <thead><tr><th style="width:34px">No</th><th style="width:130px">Tanggal</th><th style="min-width:170px">Nama Surah</th><th style="min-width:150px">Batas Hafalan</th><th style="width:100px">Ket</th><th style="width:30px"></th></tr></thead>
+          <tbody id="jtbody"></tbody>
+        </table>
+      </div>
+      <div class="journal-actions">
+        <button class="btn outline" id="addRowBtn">+ Tambah baris</button>
+        <button class="btn primary" id="saveBtn">Simpan</button>
+        <button class="btn gold" id="printBtn">🖨️ Cetak Jurnal</button>
+        <button class="btn outline" id="excelBtn">⬇ Unduh Excel</button>
+        <span class="save-status" id="saveStatus"></span>
+      </div>
+    </div>
+  </div>`;
+
+  const tbody = document.getElementById('jtbody');
+  function draw(){
+    tbody.innerHTML = rows.map((r,i)=>`
+      <tr>
+        <td class="no">${i+1}</td>
+        <td><input type="date" data-i="${i}" data-f="tanggal" value="${r.tanggal||''}"></td>
+        <td><select data-i="${i}" data-f="surah">${surahOptionsHtml(kelas, r.surah||'')}</select></td>
+        <td><input data-i="${i}" data-f="batas" value="${r.batas||''}" placeholder="Ayat ... - ..."></td>
+        <td><input data-i="${i}" data-f="ket" value="${r.ket||''}"></td>
+        <td class="rm">${isAdminMode ? `<button title="Hapus baris (mode admin)" data-i="${i}">✕</button>` : ''}</td>
+      </tr>`).join('');
+    tbody.querySelectorAll('input').forEach(inp=>{
+      inp.addEventListener('input', ()=>{
+        rows[+inp.dataset.i][inp.dataset.f] = inp.value;
+      });
+    });
+    tbody.querySelectorAll('select').forEach(sel=>{
+      sel.addEventListener('change', ()=>{
+        const i = +sel.dataset.i;
+        if(sel.value === '__custom__'){
+          const manual = prompt('Ketik nama surah/target hafalan:', rows[i].surah||'');
+          rows[i].surah = manual ? manual.trim() : (rows[i].surah||'');
+          draw();
+          return;
+        }
+        rows[i][sel.dataset.f] = sel.value;
+      });
+    });
+    tbody.querySelectorAll('.rm button').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const i = +btn.dataset.i;
+        const r = rows[i];
+        const isiKosong = !r.tanggal && !r.surah && !r.batas && !r.ket;
+        if(!isiKosong && !confirm('Yakin ingin menghapus data baris ke-'+(i+1)+' ini? Data yang sudah dihapus tidak bisa dikembalikan.')){
+          return;
+        }
+        rows.splice(i,1);
+        if(rows.length===0) rows.push({tanggal:todayISO(),surah:'',batas:'',ket:''});
+        draw();
+        // Langsung simpan ke database supaya penghapusan permanen, tidak perlu
+        // tombol "Simpan" terpisah — mencegah data lama muncul lagi saat refresh.
+        const status = document.getElementById('saveStatus');
+        if(status) status.textContent = 'Menyimpan...';
+        try{
+          await storageSet('jurnal:'+key, JSON.stringify(rows));
+          if(status) status.textContent = 'Baris dihapus & tersimpan ✓';
+        }catch(e){ if(status) status.textContent = 'Gagal menyimpan penghapusan'; }
+        setTimeout(()=>{ if(status) status.textContent=''; }, 2500);
+      });
+    });
+  }
+  draw();
+
+  document.getElementById('addRowBtn').addEventListener('click', ()=>{
+    rows.push({tanggal:todayISO(),surah:'',batas:'',ket:''});
+    draw();
+  });
+  document.getElementById('saveBtn').addEventListener('click', async ()=>{
+    const status = document.getElementById('saveStatus');
+    status.textContent = 'Menyimpan...';
+    try{
+      await storageSet('jurnal:'+key, JSON.stringify(rows));
+      status.textContent = 'Tersimpan ✓';
+    }catch(e){ status.textContent = 'Gagal menyimpan'; }
+    setTimeout(()=>status.textContent='', 2500);
+  });
+  document.getElementById('printBtn').addEventListener('click', async ()=>{
+    // Simpan dulu perubahan terakhir sebelum cetak, supaya yang tercetak selalu data terbaru.
+    try{ await storageSet('jurnal:'+key, JSON.stringify(rows)); }catch(e){}
+    printMultipleJournals([{kelas, nama, guru}]);
+  });
+  document.getElementById('excelBtn').addEventListener('click', ()=>{
+    exportExcel(kelas, nama, guru, rows);
+  });
+}
+
+function closeJournal(){
+  document.getElementById('panel-journal').classList.remove('active');
+  document.querySelector('.tab-btn[data-tab="kelas"]').classList.add('active');
+  document.getElementById('panel-kelas').classList.add('active');
+}
+window.closeJournal = closeJournal;
+
+function printBlockHtml(kelas, nama, guru, rows, today){
+  // Tabel dipadatkan minimal 22 baris agar tampilan cetak selalu penuh & rapi
+  // seperti formulir kertas aslinya, walau data yang diisi baru sedikit.
+  const MIN_ROWS = 22;
+  const filled = rows.map(r=>({tanggal:formatTanggalID(r.tanggal||''), surah:r.surah||'', batas:r.batas||'', ket:r.ket||''}));
+  while(filled.length < MIN_ROWS){ filled.push({tanggal:'', surah:'', batas:'', ket:''}); }
+
+  const rowsHtml = filled.map((r,i)=>`<tr>
+          <td style="border:1px solid #000;padding:5px 4px;text-align:center;font-size:11px;">${i+1}</td>
+          <td style="border:1px solid #000;padding:5px 4px;font-size:11px;">${r.tanggal}</td>
+          <td style="border:1px solid #000;padding:5px 4px;font-size:11px;">${r.surah}</td>
+          <td style="border:1px solid #000;padding:5px 4px;font-size:11px;">${r.batas}</td>
+          <td style="border:1px solid #000;padding:5px 4px;"></td>
+          <td style="border:1px solid #000;padding:5px 4px;font-size:11px;">${r.ket}</td>
+        </tr>`).join('');
+
+  return `
+  <div class="print-frame">
+    <div style="font-family:'Amiri',Georgia,serif;text-align:center;color:#000;font-size:12px;margin-bottom:6px;">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
+    <div style="font-family:Arial,Helvetica,sans-serif;text-align:center;font-weight:bold;font-size:18px;letter-spacing:.5px;color:#000;margin-bottom:2px;">BATASAN HAFALAN TAHFIZ</div>
+    <div style="text-align:center;font-size:11px;color:#333;font-family:Arial,sans-serif;margin-bottom:18px;">MTsN 3 Kota Padang · Tahun Pelajaran 2026/2027</div>
+    <table style="width:100%;font-family:Arial,sans-serif;font-size:13px;margin-bottom:16px;border-collapse:collapse;">
+      <tr><td style="width:150px;padding:2px 0;font-weight:bold;">NAMA</td><td style="width:14px;padding:2px 0;">:</td><td style="padding:2px 0;border-bottom:1px dotted #000;">${nama}</td></tr>
+      <tr><td style="padding:2px 0;font-weight:bold;">KELAS</td><td style="padding:2px 0;">:</td><td style="padding:2px 0;border-bottom:1px dotted #000;">${kelas}</td></tr>
+      <tr><td style="padding:2px 0;font-weight:bold;">NAMA PEMBIMBING</td><td style="padding:2px 0;">:</td><td style="padding:2px 0;border-bottom:1px dotted #000;">${guru==='-'?'':guru}</td></tr>
+    </table>
+    <table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;table-layout:fixed;">
+      <thead>
+        <tr>
+          <th style="border:1px solid #000;background:#f2f2f2;padding:7px 3px;font-size:11px;width:5%;">NO</th>
+          <th style="border:1px solid #000;background:#f2f2f2;padding:7px 3px;font-size:11px;width:13%;">TANGGAL</th>
+          <th style="border:1px solid #000;background:#f2f2f2;padding:7px 3px;font-size:11px;width:22%;">NAMA SURAH</th>
+          <th style="border:1px solid #000;background:#f2f2f2;padding:7px 3px;font-size:11px;width:28%;">BATAS HAFALAN</th>
+          <th style="border:1px solid #000;background:#f2f2f2;padding:7px 3px;font-size:11px;width:20%;">PARAF GURU<br>PEMBIMBING</th>
+          <th style="border:1px solid #000;background:#f2f2f2;padding:7px 3px;font-size:11px;width:12%;">KET</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rowsHtml}
+      </tbody>
+    </table>
+    <div style="display:flex;justify-content:flex-end;margin-top:36px;font-family:Arial,sans-serif;font-size:13px;">
+      <div style="text-align:center;width:220px;">
+        <div>Padang, ${today}</div>
+        <div>Guru Pembimbing</div>
+        <div style="margin-top:64px;border-bottom:1px solid #000;"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// Cetak/unduh gabungan untuk banyak siswa sekaligus (satu file untuk satu kelas / satu guru)
+async function fetchRowsFor(kelas, nama){
+  const key = studentKey(kelas, nama);
+  try{
+    const r = await storageGet('jurnal:'+key);
+    const rows = r ? JSON.parse(r.value) : [];
+    return rows.length ? rows : [{tanggal:'',surah:'',batas:'',ket:''}];
+  }catch(e){ return [{tanggal:'',surah:'',batas:'',ket:''}]; }
+}
+
+async function printMultipleJournals(list){
+  const today = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+  const blocks = [];
+  for(const item of list){
+    const rows = await fetchRowsFor(item.kelas, item.nama);
+    blocks.push(`<div class="print-page">${printBlockHtml(item.kelas, item.nama, item.guru||'-', rows, today)}</div>`);
+  }
+  document.getElementById('printArea').innerHTML = blocks.join('');
+  window.print();
+}
+window.printMultipleJournals = printMultipleJournals;
+
+async function printKelasJournal(kid){
+  const groups = effectiveGroups(kid);
+  const list = [];
+  groups.forEach(g=> g.students.forEach(nama=> list.push({kelas:kid, nama, guru:g.guru})));
+  if(!list.length){ alert('Belum ada siswa di kelas ini.'); return; }
+  await printMultipleJournals(list);
+}
+window.printKelasJournal = printKelasJournal;
+
+async function printGuruJournal(name){
+  const entries = allTeachers()[name] || [];
+  const list = [];
+  entries.forEach(e=> e.students.forEach(nama=> list.push({kelas:e.kelas, nama, guru:name})));
+  if(!list.length){ alert('Belum ada siswa bimbingan.'); return; }
+  await printMultipleJournals(list);
+}
+window.printGuruJournal = printGuruJournal;
+
+/* ================= EXCEL (ExcelJS — mendukung border, warna, rata tengah,
+   supaya hasil unduhan rapi dan tata letaknya sama persis dengan versi cetak) ================= */
+const XLS_DEEP = 'FF0D4A3A';
+const XLS_GOLD = 'FFB8912F';
+const XLS_HEAD_BG = 'FF0D4A3A';
+const XLS_STRIPE = 'FFF6F4EC';
+const XLS_BORDER_COLOR = 'FF000000';
+const XLS_MIN_ROWS = 18; // baris tabel minimal, biar rapi walau data baru sedikit
+
+function thinBorder(){
+  return {
+    top:{style:'thin', color:{argb:XLS_BORDER_COLOR}},
+    left:{style:'thin', color:{argb:XLS_BORDER_COLOR}},
+    bottom:{style:'thin', color:{argb:XLS_BORDER_COLOR}},
+    right:{style:'thin', color:{argb:XLS_BORDER_COLOR}}
+  };
+}
+
+// Membangun satu sheet jurnal (identik tata letaknya dengan halaman cetak PDF)
+function buildJournalSheet(wb, sheetName, kelas, nama, guru, rows, today){
+  const ws = wb.addWorksheet(sheetName, { pageSetup:{ paperSize:9, orientation:'portrait', fitToPage:true, fitToWidth:1, fitToHeight:0, margins:{left:0.5,right:0.5,top:0.6,bottom:0.6,header:0.3,footer:0.3} } });
+
+  ws.columns = [
+    {key:'no', width:5.5},
+    {key:'tanggal', width:14},
+    {key:'surah', width:24},
+    {key:'batas', width:28},
+    {key:'paraf', width:18},
+    {key:'ket', width:12}
+  ];
+
+  // Judul
+  ws.mergeCells('A1:F1');
+  const title = ws.getCell('A1');
+  title.value = 'BATASAN HAFALAN TAHFIZ';
+  title.font = { bold:true, size:15, color:{argb:XLS_DEEP} };
+  title.alignment = { horizontal:'center', vertical:'middle' };
+  ws.getRow(1).height = 24;
+
+  ws.mergeCells('A2:F2');
+  const sub = ws.getCell('A2');
+  sub.value = 'MTsN 3 Kota Padang · Tahun Pelajaran 2026/2027';
+  sub.font = { italic:true, size:10.5, color:{argb:'FF6B7C74'} };
+  sub.alignment = { horizontal:'center' };
+
+  // Info nama/kelas/pembimbing
+  const infoRows = [
+    ['NAMA', nama],
+    ['KELAS', kelas],
+    ['NAMA PEMBIMBING', guru==='-'?'':guru]
+  ];
+  let r = 4;
+  infoRows.forEach(([label, val])=>{
+    const labelCell = ws.getCell('A'+r);
+    labelCell.value = label;
+    labelCell.font = { bold:true, size:11, color:{argb:XLS_DEEP} };
+    ws.getCell('B'+r).value = ':';
+    ws.mergeCells('C'+r+':F'+r);
+    const valCell = ws.getCell('C'+r);
+    valCell.value = val;
+    valCell.font = { size:11 };
+    valCell.border = { bottom:{style:'dotted', color:{argb:'FF999999'}} };
+    r++;
+  });
+  r++; // baris kosong pemisah
+
+  // Header tabel
+  const headerRowIdx = r;
+  const headers = ['NO','TANGGAL','NAMA SURAH','BATAS HAFALAN','PARAF GURU\nPEMBIMBING','KET'];
+  const headerRow = ws.getRow(headerRowIdx);
+  headers.forEach((h,i)=>{
+    const cell = headerRow.getCell(i+1);
+    cell.value = h;
+    cell.font = { bold:true, size:10.5, color:{argb:'FFFFFFFF'} };
+    cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:XLS_HEAD_BG} };
+    cell.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+    cell.border = thinBorder();
+  });
+  headerRow.height = 30;
+
+  // Isi data, dipadatkan minimal XLS_MIN_ROWS baris supaya rapi & konsisten dgn cetak PDF
+  const filled = rows.map(rr=>({tanggal:formatTanggalID(rr.tanggal||''), surah:rr.surah||'', batas:rr.batas||'', ket:rr.ket||''}));
+  while(filled.length < XLS_MIN_ROWS) filled.push({tanggal:'', surah:'', batas:'', ket:''});
+
+  filled.forEach((data, i)=>{
+    const rowIdx = headerRowIdx + 1 + i;
+    const row = ws.getRow(rowIdx);
+    const values = [i+1, data.tanggal, data.surah, data.batas, '', data.ket];
+    values.forEach((v,ci)=>{
+      const cell = row.getCell(ci+1);
+      cell.value = v===''? null : v;
+      cell.border = thinBorder();
+      cell.alignment = ci===0
+        ? { horizontal:'center', vertical:'middle' }
+        : { horizontal:'left', vertical:'middle', wrapText:true };
+      cell.font = { size:10.5 };
+      if(i % 2 === 1){ cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:XLS_STRIPE} }; }
+    });
+    row.height = 18;
+  });
+
+  ws.views = [{ state:'frozen', ySplit: headerRowIdx }];
+
+  // Tanda tangan
+  const signRow = headerRowIdx + filled.length + 3;
+  ws.mergeCells(`D${signRow}:F${signRow}`);
+  const dateCell = ws.getCell(`D${signRow}`);
+  dateCell.value = 'Padang, ' + today;
+  dateCell.alignment = { horizontal:'center' };
+
+  ws.mergeCells(`D${signRow+1}:F${signRow+1}`);
+  const roleCell = ws.getCell(`D${signRow+1}`);
+  roleCell.value = 'Guru Pembimbing';
+  roleCell.alignment = { horizontal:'center' };
+
+  ws.mergeCells(`D${signRow+5}:F${signRow+5}`);
+  ws.getCell(`D${signRow+5}`).border = { bottom:{style:'thin', color:{argb:XLS_BORDER_COLOR}} };
+
+  return ws;
+}
+
+async function downloadWorkbook(wb, filename){
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1500);
+}
+
+function uniqueSheetName(wb, base){
+  let sheetName = base.replace(/[\\/*?:\[\]]/g,'').slice(0,31) || 'Siswa';
+  let n = 1;
+  const usedBase = sheetName;
+  while(wb.worksheets.some(s=>s.name===sheetName)){ sheetName = (usedBase.slice(0,28)+'_'+(++n)); }
+  return sheetName;
+}
+
+async function exportExcel(kelas, nama, guru, rows){
+  const today = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+  const wb = new ExcelJS.Workbook();
+  buildJournalSheet(wb, 'Jurnal Tahfiz', kelas, nama, guru, rows, today);
+  await downloadWorkbook(wb, `Jurnal_Tahfiz_${nama.replace(/\s+/g,'_')}_${kelas}.xlsx`);
+}
+
+async function exportExcelKelas(kid){
+  const groups = effectiveGroups(kid);
+  const today = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+  const wb = new ExcelJS.Workbook();
+  for(const g of groups){
+    for(const nama of g.students){
+      const rows = await fetchRowsFor(kid, nama);
+      const sheetName = uniqueSheetName(wb, nama);
+      buildJournalSheet(wb, sheetName, kid, nama, g.guru||'', rows, today);
+    }
+  }
+  await downloadWorkbook(wb, `Jurnal_Tahfiz_Kelas_${kid}.xlsx`);
+}
+window.exportExcelKelas = exportExcelKelas;
+
+async function exportExcelGuru(name){
+  const entries = allTeachers()[name] || [];
+  const today = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+  const wb = new ExcelJS.Workbook();
+  for(const e of entries){
+    for(const nama of e.students){
+      const rows = await fetchRowsFor(e.kelas, nama);
+      const sheetName = uniqueSheetName(wb, nama);
+      buildJournalSheet(wb, sheetName, e.kelas, nama, name, rows, today);
+    }
+  }
+  await downloadWorkbook(wb, `Jurnal_Tahfiz_${name.replace(/\s+/g,'_')}.xlsx`);
+}
+window.exportExcelGuru = exportExcelGuru;
+
+/* ================= INIT ================= */
+function initPrintKelasPicker(){
+  const sel = document.getElementById('printKelasSelect');
+  if(!sel) return;
+  const allKelas = Object.keys(CLASSES).sort((a,b)=> a.localeCompare(b, undefined, {numeric:true}));
+  sel.innerHTML = allKelas.map(kid=>`<option value="${kid}">Kelas ${kid}</option>`).join('');
+
+  document.getElementById('printKelasPickBtn').addEventListener('click', ()=>{
+    printKelasJournal(sel.value);
+  });
+  document.getElementById('excelKelasPickBtn').addEventListener('click', ()=>{
+    exportExcelKelas(sel.value);
+  });
+}
+
+(async function init(){
+  initAdminMode();
+  await loadOverrides();
+  renderKelasGrids();
+  initPrintKelasPicker();
+})();
+</script>
+</body>
+</html>
