@@ -7,6 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <style>
 :root{
   --ink:#1b2e26;
@@ -158,6 +159,9 @@ table.jtable td input:focus{outline:1px solid var(--gold);border-radius:3px;}
 table.jtable td.no{text-align:center;color:var(--muted);width:34px;}
 table.jtable td.rm{text-align:center;width:30px;}
 table.jtable td.rm button{background:none;border:none;color:var(--danger);cursor:pointer;font-size:15px;}
+table.jtable tr.locked-row{background:rgba(0,0,0,.04);}
+table.jtable tr.locked-row td{color:var(--muted);}
+table.jtable tr.locked-row td.no::after{content:" 🔒";font-size:10px;}
 .journal-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
 .btn{padding:9px 18px;border-radius:8px;border:none;font-weight:600;font-size:13.5px;cursor:pointer;font-family:var(--sans);}
 .btn.primary{background:var(--deep);color:#fff;}
@@ -459,6 +463,10 @@ const firebaseConfig = {
   appId: "1:905659888457:web:61bebf66564b48424c6098"
 };
 
+const ADMIN_EMAIL = "aldiomfrizi@gmail.com";
+let authReadyResolve;
+const authReady = new Promise(function(res){ authReadyResolve = res; });
+
 let db = null;
 let hasFirestore = false;
 try{
@@ -466,6 +474,15 @@ try{
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     hasFirestore = true;
+    firebase.auth().onAuthStateChanged(function(user){
+      if(user){
+        if(authReadyResolve){ authReadyResolve(user); authReadyResolve = null; }
+      }else{
+        firebase.auth().signInAnonymously().catch(function(e){
+          console.error('Anonymous sign-in gagal:', e);
+        });
+      }
+    });
   }
 }catch(e){ console.error('Firebase gagal diinisialisasi, jatuh ke penyimpanan lokal.', e); hasFirestore = false; }
 
@@ -484,30 +501,6 @@ try{
 let isAdminMode = false;
 let currentKelasDetailId = null;
 
-async function sha256Hex(text){
-  try{
-    if(window.crypto && window.crypto.subtle){
-      const enc = new TextEncoder().encode(text);
-      const buf = await window.crypto.subtle.digest('SHA-256', enc);
-      return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-    }
-  }catch(e){ console.error('Web Crypto tidak tersedia, pakai fallback hash sederhana.', e); }
-  // Fallback sangat sederhana (bukan kriptografi kuat), hanya dipakai kalau
-  // browser tidak mendukung Web Crypto API sama sekali.
-  let h = 0;
-  for(let i=0;i<text.length;i++){ h = (h*31 + text.charCodeAt(i)) >>> 0; }
-  return 'fallback-'+h.toString(16);
-}
-async function getStoredPinHash(){
-  try{
-    const r = await storageGet('admin-pin-hash');
-    return r ? r.value : null;
-  }catch(e){ return null; }
-}
-async function setStoredPinHash(hash){
-  await storageSet('admin-pin-hash', hash);
-}
-
 function initAdminMode(){
   try{ isAdminMode = sessionStorage.getItem('tahfizAdminMode') === '1'; }catch(e){ isAdminMode = false; }
   updateAdminToggleIcon();
@@ -521,49 +514,38 @@ async function toggleAdminLogin(){
     if(currentKelasDetailId) showKelasDetail(currentKelasDetailId);
     return;
   }
-  const existingHash = await getStoredPinHash();
-  if(!existingHash){
-    const p1 = prompt('Belum ada PIN admin yang diset untuk aplikasi ini.\nBuat PIN admin baru sekarang (minimal 4 karakter):');
-    if(p1 === null) return;
-    if(p1.length < 4){ alert('PIN minimal 4 karakter. Coba lagi dengan mengklik ikon 🔒.'); return; }
-    const p2 = prompt('Ketik ulang PIN baru untuk konfirmasi:');
-    if(p2 === null) return;
-    if(p1 !== p2){ alert('PIN tidak sama. Coba lagi dari awal.'); return; }
-    await setStoredPinHash(await sha256Hex(p1));
-    isAdminMode = true;
-    try{ sessionStorage.setItem('tahfizAdminMode','1'); }catch(e){}
-    updateAdminToggleIcon();
-    alert('PIN admin berhasil dibuat & mode admin aktif.\n\nMode ini otomatis nonaktif kalau tab/browser ditutup.');
-    if(currentKelasDetailId) showKelasDetail(currentKelasDetailId);
-    return;
-  }
-  const pin = prompt('Masukkan PIN admin:');
+  const pin = prompt('Masukkan password admin:');
   if(pin === null) return;
-  const hash = await sha256Hex(pin);
-  if(hash === existingHash){
+  try{
+    await firebase.auth().signInWithEmailAndPassword(ADMIN_EMAIL, pin);
     isAdminMode = true;
     try{ sessionStorage.setItem('tahfizAdminMode','1'); }catch(e){}
     updateAdminToggleIcon();
     if(currentKelasDetailId) showKelasDetail(currentKelasDetailId);
-  } else {
-    alert('PIN salah.');
+  }catch(e){
+    alert('Password salah.');
   }
 }
 
 async function gantiPinAdmin(){
   if(!isAdminMode) return;
-  const existingHash = await getStoredPinHash();
-  const lama = prompt('Masukkan PIN admin yang sekarang:');
+  const lama = prompt('Masukkan password admin yang sekarang:');
   if(lama === null) return;
-  if(existingHash && await sha256Hex(lama) !== existingHash){ alert('PIN saat ini salah. Penggantian dibatalkan.'); return; }
-  const baru1 = prompt('Masukkan PIN admin baru (minimal 4 karakter):');
+  const baru1 = prompt('Masukkan password admin baru (minimal 6 karakter):');
   if(baru1 === null) return;
-  if(baru1.length < 4){ alert('PIN minimal 4 karakter.'); return; }
-  const baru2 = prompt('Ketik ulang PIN baru untuk konfirmasi:');
+  if(baru1.length < 6){ alert('Password minimal 6 karakter.'); return; }
+  const baru2 = prompt('Ketik ulang password baru untuk konfirmasi:');
   if(baru2 === null) return;
-  if(baru1 !== baru2){ alert('PIN baru yang diketik tidak sama. Coba lagi.'); return; }
-  await setStoredPinHash(await sha256Hex(baru1));
-  alert('PIN admin berhasil diganti. PIN lama tidak berlaku lagi.');
+  if(baru1 !== baru2){ alert('Password baru yang diketik tidak sama. Coba lagi.'); return; }
+  try{
+    const user = firebase.auth().currentUser;
+    const cred = firebase.auth.EmailAuthProvider.credential(ADMIN_EMAIL, lama);
+    await user.reauthenticateWithCredential(cred);
+    await user.updatePassword(baru1);
+    alert('Password admin berhasil diganti. Password lama tidak berlaku lagi.');
+  }catch(e){
+    alert('Password saat ini salah atau gagal menyimpan.');
+  }
 }
 window.gantiPinAdmin = gantiPinAdmin;
 
@@ -577,7 +559,16 @@ function updateAdminToggleIcon(){
 
 async function deleteJurnalDoc(kelas, nama){
   const key = studentKey(kelas, nama);
+  // Backup dulu isi yang akan dihapus, supaya tetap bisa dipulihkan lewat
+  // panel "🕘 Riwayat Versi" di halaman jurnal siswa ini walau sudah "dihapus".
+  try{
+    const current = await storageGet('jurnal:'+key);
+    if(current && current.value){
+      await backupJurnalVersion(key, JSON.parse(current.value));
+    }
+  }catch(e){ console.error('Gagal membackup sebelum hapus, tetap lanjut menghapus:', e); }
   if(hasFirestore){
+    await authReady;
     await db.collection('tahfiz').doc(firestoreDocId('jurnal:'+key)).delete();
   } else {
     // Fallback kalau Firestore tidak aktif: kosongkan datanya di penyimpanan yang dipakai.
@@ -587,7 +578,7 @@ async function deleteJurnalDoc(kelas, nama){
 
 async function hapusJurnalSiswa(kelas, nama){
   if(!isAdminMode) return;
-  const konfirmasi = prompt('Ini akan MENGHAPUS PERMANEN seluruh riwayat hafalan "'+nama+'" dan tidak bisa dikembalikan.\n\nKetik nama siswa persis untuk konfirmasi:\n'+nama);
+  const konfirmasi = prompt('Ini akan menghapus seluruh riwayat hafalan "'+nama+'" dari tampilan.\n\n(Sistem otomatis membuat cadangan sebelum menghapus — kalau ternyata keliru, buka jurnal siswa ini lagi lalu klik "🕘 Riwayat Versi" untuk memulihkan.)\n\nKetik nama siswa persis untuk konfirmasi:\n'+nama);
   if(konfirmasi === null) return;
   if(konfirmasi !== nama){ alert('Nama yang diketik tidak cocok. Penghapusan dibatalkan.'); return; }
   try{
@@ -602,7 +593,7 @@ async function hapusJurnalSekelas(kelas){
   const groups = effectiveGroups(kelas);
   const allStudents = groups.flatMap(g=>g.students);
   const kodeKonfirmasi = 'HAPUS '+kelas;
-  const konfirmasi = prompt('Ini akan MENGHAPUS PERMANEN riwayat hafalan SELURUH '+allStudents.length+' siswa di kelas '+kelas+'. Tidak bisa dikembalikan.\n\nKetik teks berikut persis untuk konfirmasi:\n'+kodeKonfirmasi);
+  const konfirmasi = prompt('Ini akan menghapus riwayat hafalan SELURUH '+allStudents.length+' siswa di kelas '+kelas+' dari tampilan.\n\n(Cadangan otomatis dibuat per siswa sebelum dihapus — bisa dipulihkan satu per satu lewat "🕘 Riwayat Versi" di halaman jurnal masing-masing siswa.)\n\nKetik teks berikut persis untuk konfirmasi:\n'+kodeKonfirmasi);
   if(konfirmasi === null) return;
   if(konfirmasi !== kodeKonfirmasi){ alert('Teks konfirmasi tidak cocok. Penghapusan dibatalkan.'); return; }
   let gagal = [];
@@ -648,6 +639,7 @@ function firestoreDocId(key){
 async function storageGet(key){
   if(hasFirestore){
     try{
+      await authReady;
       const snap = await db.collection('tahfiz').doc(firestoreDocId(key)).get();
       setStorageStatus('online');
       if(snap.exists) return {key, value: snap.data().value};
@@ -669,6 +661,7 @@ async function storageGet(key){
 async function storageSet(key, value){
   if(hasFirestore){
     try{
+      await authReady;
       await db.collection('tahfiz').doc(firestoreDocId(key)).set({
         value,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -687,6 +680,58 @@ async function storageSet(key, value){
   return {key, value};
 }
 
+/* ================= BACKUP OTOMATIS & RIWAYAT VERSI =================
+   Tujuan: supaya data jurnal tidak hilang tanpa sengaja, baik karena
+   - baris dihapus keliru,
+   - jurnal siswa/kelas dihapus admin,
+   - atau dua perangkat menyimpan bersamaan sehingga yang belakangan
+     menimpa punya yang duluan (last-write-wins).
+   Setiap kali data jurnal seorang siswa akan ditimpa/dihapus, versi
+   LAMA-nya otomatis disalin dulu ke riwayat (maks beberapa versi
+   terakhir) sebelum perubahan baru disimpan. Admin bisa membuka
+   panel "🕘 Riwayat Versi" di halaman jurnal siswa untuk memulihkannya. */
+const HIST_MAX_VERSIONS = 8;
+
+async function backupJurnalVersion(key, rowsBefore){
+  try{
+    if(!rowsBefore || rowsBefore.length===0) return;
+    const ts = new Date().toISOString();
+    await storageSet('hist:'+key+':'+ts, JSON.stringify(rowsBefore));
+    const idxRaw = await storageGet('histindex:'+key);
+    let idx = [];
+    try{ idx = idxRaw ? JSON.parse(idxRaw.value) : []; }catch(e){ idx = []; }
+    idx.push(ts);
+    if(idx.length > HIST_MAX_VERSIONS){ idx = idx.slice(idx.length - HIST_MAX_VERSIONS); }
+    await storageSet('histindex:'+key, JSON.stringify(idx));
+  }catch(e){ console.error('Backup riwayat gagal (tidak menghentikan proses simpan utama):', e); }
+}
+
+async function getJurnalHistory(key){
+  try{
+    const idxRaw = await storageGet('histindex:'+key);
+    const idx = idxRaw ? JSON.parse(idxRaw.value) : [];
+    return idx.slice().reverse(); // terbaru dulu
+  }catch(e){ return []; }
+}
+
+/* Pengganti storageSet biasa khusus untuk data jurnal (kunci 'jurnal:'+key):
+   1. Selalu backup dulu versi yang SEDANG tersimpan di database sebelum ditimpa.
+   2. Kalau versi yang sedang tersimpan ternyata sudah berbeda dari saat halaman
+      ini terakhir dimuat (tanda ada perangkat lain yang menyimpan duluan),
+      tetap disimpan (supaya guru tidak macet), tapi ditandai "conflict" agar
+      halaman bisa memberi tahu guru — dan versi lama itu tetap aman di riwayat. */
+async function saveJurnalSafely(key, rows, knownPreviousValue){
+  let current = null;
+  try{ current = await storageGet('jurnal:'+key); }catch(e){}
+  const currentValue = current ? current.value : null;
+  if(currentValue){
+    try{ await backupJurnalVersion(key, JSON.parse(currentValue)); }catch(e){}
+  }
+  const conflict = (knownPreviousValue !== undefined && currentValue !== null && currentValue !== knownPreviousValue);
+  await storageSet('jurnal:'+key, JSON.stringify(rows));
+  return { conflict };
+}
+
 // Cek koneksi Firestore begitu halaman dibuka, supaya guru langsung tahu
 // statusnya tanpa perlu isi jurnal dulu.
 (async function initialStorageCheck(){
@@ -695,6 +740,7 @@ async function storageSet(key, value){
     return;
   }
   try{
+    await authReady;
     await db.collection('tahfiz').doc('_status_check').get();
     setStorageStatus('online');
   }catch(e){
@@ -929,16 +975,18 @@ async function openJournal(kelas, nama, guru){
 
   const key = studentKey(kelas, nama);
   let rows = [];
+  let loadedRaw = null;
   try{
     const r = await storageGet('jurnal:'+key);
+    loadedRaw = r ? r.value : null;
     rows = r ? JSON.parse(r.value) : [];
   }catch(e){ rows = []; }
   if(rows.length===0){ rows = [{tanggal:todayISO(),surah:'',batas:'',ket:''}]; }
-  renderJournal(kelas, nama, guru, rows);
+  renderJournal(kelas, nama, guru, rows, loadedRaw);
 }
 window.openJournal = openJournal;
 
-function renderJournal(kelas, nama, guru, rows){
+function renderJournal(kelas, nama, guru, rows, loadedRaw){
   const key = studentKey(kelas, nama);
   const panel = document.getElementById('panel-journal');
   panel.innerHTML = `
@@ -962,14 +1010,32 @@ function renderJournal(kelas, nama, guru, rows){
         <button class="btn primary" id="saveBtn">Simpan</button>
         <button class="btn gold" id="printBtn">🖨️ Cetak Jurnal</button>
         <button class="btn outline" id="excelBtn">⬇ Unduh Excel</button>
+        ${isAdminMode ? '<button class="btn outline" id="histBtn">🕘 Riwayat Versi</button>' : ''}
         <span class="save-status" id="saveStatus"></span>
       </div>
+      ${isAdminMode ? '<div id="histPanel" style="display:none;margin-top:14px;"></div>' : ''}
     </div>
   </div>`;
 
   const tbody = document.getElementById('jtbody');
+  function escapeHtml(s){
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
   function draw(){
-    tbody.innerHTML = rows.map((r,i)=>`
+    tbody.innerHTML = rows.map((r,i)=>{
+      const locked = !!r.locked && !isAdminMode;
+      if(locked){
+        return `
+      <tr class="locked-row">
+        <td class="no">${i+1}</td>
+        <td>${escapeHtml(formatTanggalID(r.tanggal||''))}</td>
+        <td>${escapeHtml(r.surah||'')}</td>
+        <td>${escapeHtml(r.batas||'')}</td>
+        <td>${escapeHtml(r.ket||'')}</td>
+        <td class="rm"></td>
+      </tr>`;
+      }
+      return `
       <tr>
         <td class="no">${i+1}</td>
         <td><input type="date" data-i="${i}" data-f="tanggal" value="${r.tanggal||''}"></td>
@@ -977,7 +1043,8 @@ function renderJournal(kelas, nama, guru, rows){
         <td><input data-i="${i}" data-f="batas" value="${r.batas||''}" placeholder="Ayat ... - ..."></td>
         <td><input data-i="${i}" data-f="ket" value="${r.ket||''}"></td>
         <td class="rm">${isAdminMode ? `<button title="Hapus baris (mode admin)" data-i="${i}">✕</button>` : ''}</td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
     tbody.querySelectorAll('input').forEach(inp=>{
       inp.addEventListener('input', ()=>{
         rows[+inp.dataset.i][inp.dataset.f] = inp.value;
@@ -1000,7 +1067,7 @@ function renderJournal(kelas, nama, guru, rows){
         const i = +btn.dataset.i;
         const r = rows[i];
         const isiKosong = !r.tanggal && !r.surah && !r.batas && !r.ket;
-        if(!isiKosong && !confirm('Yakin ingin menghapus data baris ke-'+(i+1)+' ini? Data yang sudah dihapus tidak bisa dikembalikan.')){
+        if(!isiKosong && !confirm('Yakin ingin menghapus data baris ke-'+(i+1)+' ini?\n\n(Cadangan otomatis dibuat sebelum dihapus — admin bisa memulihkannya lewat "🕘 Riwayat Versi".)')){
           return;
         }
         rows.splice(i,1);
@@ -1008,13 +1075,18 @@ function renderJournal(kelas, nama, guru, rows){
         draw();
         // Langsung simpan ke database supaya penghapusan permanen, tidak perlu
         // tombol "Simpan" terpisah — mencegah data lama muncul lagi saat refresh.
+        // saveJurnalSafely otomatis membackup versi lama & mendeteksi kalau ada
+        // perangkat lain yang sudah menyimpan duluan sejak halaman ini dimuat.
         const status = document.getElementById('saveStatus');
         if(status) status.textContent = 'Menyimpan...';
         try{
-          await storageSet('jurnal:'+key, JSON.stringify(rows));
-          if(status) status.textContent = 'Baris dihapus & tersimpan ✓';
+          const res = await saveJurnalSafely(key, rows, loadedRaw);
+          loadedRaw = JSON.stringify(rows);
+          if(status) status.textContent = res.conflict
+            ? 'Tersimpan ✓ (ada perubahan dari perangkat lain — versi lama diamankan di Riwayat)'
+            : 'Baris dihapus & tersimpan ✓';
         }catch(e){ if(status) status.textContent = 'Gagal menyimpan penghapusan'; }
-        setTimeout(()=>{ if(status) status.textContent=''; }, 2500);
+        setTimeout(()=>{ if(status) status.textContent=''; }, 4000);
       });
     });
   }
@@ -1028,18 +1100,62 @@ function renderJournal(kelas, nama, guru, rows){
     const status = document.getElementById('saveStatus');
     status.textContent = 'Menyimpan...';
     try{
-      await storageSet('jurnal:'+key, JSON.stringify(rows));
-      status.textContent = 'Tersimpan ✓';
+      rows.forEach(r=>{
+        const isiKosong = !r.tanggal && !r.surah && !r.batas && !r.ket;
+        if(!isiKosong) r.locked = true;
+      });
+      const res = await saveJurnalSafely(key, rows, loadedRaw);
+      loadedRaw = JSON.stringify(rows);
+      status.textContent = res.conflict
+        ? 'Tersimpan & terkunci ✓ (ada perubahan dari perangkat lain — versi lama diamankan di Riwayat)'
+        : 'Tersimpan & terkunci ✓';
+      draw();
     }catch(e){ status.textContent = 'Gagal menyimpan'; }
-    setTimeout(()=>status.textContent='', 2500);
+    setTimeout(()=>status.textContent='', 4000);
   });
   document.getElementById('printBtn').addEventListener('click', async ()=>{
     // Simpan dulu perubahan terakhir sebelum cetak, supaya yang tercetak selalu data terbaru.
-    try{ await storageSet('jurnal:'+key, JSON.stringify(rows)); }catch(e){}
+    try{ const res = await saveJurnalSafely(key, rows, loadedRaw); loadedRaw = JSON.stringify(rows); }catch(e){}
     printMultipleJournals([{kelas, nama, guru}]);
   });
   document.getElementById('excelBtn').addEventListener('click', ()=>{
     exportExcel(kelas, nama, guru, rows);
+  });
+  document.getElementById('histBtn')?.addEventListener('click', async ()=>{
+    const panel = document.getElementById('histPanel');
+    if(!panel) return;
+    if(panel.style.display === 'block'){ panel.style.display = 'none'; return; }
+    panel.style.display = 'block';
+    panel.innerHTML = '<div class="notice">Memuat riwayat…</div>';
+    const versions = await getJurnalHistory(key);
+    if(versions.length === 0){
+      panel.innerHTML = '<div class="notice">Belum ada riwayat tersimpan untuk siswa ini. Riwayat otomatis terbentuk setiap kali ada perubahan (simpan/hapus baris/hapus jurnal) sejak fitur ini aktif.</div>';
+      return;
+    }
+    panel.innerHTML =
+      '<div class="notice">Riwayat otomatis, maksimal '+HIST_MAX_VERSIONS+' versi terakhir (terbaru di atas). Klik "Pulihkan" untuk mengembalikan data ke versi tersebut — versi yang sedang aktif akan ikut dibackup dulu sebelum ditimpa.</div>'+
+      '<div class="guru-list">'+
+      versions.map(ts=>{
+        const label = new Date(ts).toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});
+        return `<div class="guru-row"><span class="gname">${label}</span><button class="mini-btn ghost" data-ts="${ts}">Pulihkan versi ini</button></div>`;
+      }).join('')+
+      '</div>';
+    panel.querySelectorAll('button[data-ts]').forEach(b=>{
+      b.addEventListener('click', async ()=>{
+        const label = new Date(b.dataset.ts).toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});
+        if(!confirm('Pulihkan jurnal "'+nama+'" ke versi '+label+'?\n\nVersi yang sedang aktif sekarang akan otomatis dibackup dulu sebelum ditimpa, jadi tetap aman kalau ternyata salah pilih.')) return;
+        let snap;
+        try{ snap = await storageGet('hist:'+key+':'+b.dataset.ts); }catch(e){}
+        if(!snap){ alert('Data riwayat tidak ditemukan.'); return; }
+        let restored;
+        try{ restored = JSON.parse(snap.value); }catch(e){ alert('Data riwayat rusak, tidak bisa dipulihkan.'); return; }
+        try{
+          await saveJurnalSafely(key, restored, loadedRaw);
+          alert('Berhasil dipulihkan.');
+          openJournal(kelas, nama, guru);
+        }catch(e){ alert('Gagal memulihkan: '+(e.message||e)); }
+      });
+    });
   });
 }
 
